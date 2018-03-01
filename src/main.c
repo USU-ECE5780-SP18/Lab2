@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 		while (eos < line_n && buff[eos] != ',') { ++eos; }
 		// A fully rigorous program would probably do some validation here
 		// calloc for convenient null terminator
-		// performance implications compared to manually adding \0 after malloc and memcpy unkown
+		// performance implications compared to manually adding \0 after malloc and memcpy unknown
 		task->ID = (char*)calloc(sizeof(char), eos + 1);
 		memcpy(task->ID, buff, eos);
 		
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
 		while (eos < line_n && buff[eos] != ',') { ++eos; }
 		// A fully rigorous program would probably do some validation here
 		// calloc for convenient null terminator
-		// performance implications compared to manually adding \0 after malloc and memcpy unkown
+		// performance implications compared to manually adding \0 after malloc and memcpy unknown
 		task->ID = (char*)calloc(sizeof(char), eos + 1);
 		memcpy(task->ID, buff, eos);
 		
