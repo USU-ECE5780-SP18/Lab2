@@ -1,18 +1,30 @@
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct {
 	const char* ID;
-	int C;
-	int T;
+	uint16_t C;
+	uint16_t T;
 } PeriodicTask;
 
 typedef struct {
 	const char* ID;
-	int C;
-	int r;
+	uint16_t C;
+	uint16_t r;
 } AperiodicTask;
 
-void Simulate(PeriodicTask* periodicTasks, AperiodicTask* aperiodicTasks, FILE* fout) {
+typedef struct {
+	FILE* fout;
+	uint16_t time;
+	
+	uint8_t pCount;
+	uint8_t aCount;
+	
+	PeriodicTask* pTasks;
+	AperiodicTask* aTasks;
+} Simulation;
+
+void Simulate(Simulation* plan) {
 	
 }
 
@@ -22,10 +34,12 @@ int main(int argc, char** argv) {
 	
 	printf("The input file: %s\nThe output file: %s\r\n", filein, fileout);
 	
+	Simulation* plan = calloc(sizeof(Simulation), 1);
+	
 	FILE* fin = fopen(filein, "r");
 	// Parse the file to get n and contents of each periodic task
-	PeriodicTask* periodicTasks = calloc(sizeof(PeriodicTask), n);
-	AperiodicTask* aperiodicTasks = calloc(sizeof(AperiodicTask), n);
+	plan->pTasks = calloc(sizeof(PeriodicTask), n);
+	plan->aTasks = calloc(sizeof(AperiodicTask), n);
 	// periodicTasks[i]
 	fclose(fin);
 	
@@ -33,6 +47,10 @@ int main(int argc, char** argv) {
 	FILE* fout = fopen(fileout, "w");
 	Simulate(periodicTasks, aperiodicTasks, fout);
 	fclose(fout);
+	
+	free(plan->pTasks);
+	free(plan->aTasks);
+	free(plan);
 	
 	return 0;
 }
