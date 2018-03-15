@@ -70,14 +70,14 @@ void Simulate(Simulation* plan) {
 	for (int i = 0; i < plan->time; i++){
 		running = checkToRun(plan->pTasks, plan->pCount);
 		if (running < plan->pCount){
-			printf("%d : %s ", i, plan->pTasks[running].ID);
+			fprintf(plan->fout, "%d : %s\n", i, plan->pTasks[running].ID);
+			plan->pTasks[running].R--;
+			if (plan->pTasks[running].R == 0){
+				plan->pTasks[running].ran = true;
+				plan->pTasks[running].R = plan->pTasks[running].C;
+			}
 		} else {
-			printf("%d : %c ", i, '-');
-		}
-		plan->pTasks[running].R--;
-		if (plan->pTasks[running].R <= 0){
-			plan->pTasks[running].ran = true;
-			plan->pTasks[running].R = plan->pTasks[running].C;
+			fprintf(plan->fout, "%d : %s\n", i, "slack");
 		}
 		checkReleases(plan->pTasks, plan->pCount, i);
 	}
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
 		// performance implications compared to manually adding \0 after malloc and memcpy unknown
 		task->ID = (char*)calloc(sizeof(char), eos + 1);
 		memcpy(task->ID, buff, eos);
-		
+
 		// Get the execution time
 		int bos = eos++; // beginning of string
 		while (eos < line_n && buff[eos] == ' ') { ++eos; ++bos; } // Get rid of space
@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
 	
 	// Cleanup after ourselves
 	fclose(plan->fout);
-	
+
 	for (int i = 0; i < plan->pCount; ++i) {
 		free(plan->pTasks[i].ID);
 	}
