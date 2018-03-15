@@ -28,7 +28,7 @@ typedef struct {
 	AperiodicTask* aTasks;
 } Simulation;
 
-void sortTasks(PeriodicTask* &tasks, uint8_t pCount){
+void sortTasks(PeriodicTask* tasks, uint8_t pCount){
 	//put tasks in order by priority
 	for (int i = 0; i < pCount; i++){
 		for (int j = i+1; j < pCount; j++){
@@ -56,13 +56,13 @@ uint8_t checkToRun(PeriodicTask* periodicTasks, uint8_t pCount){
 	return pCount;
 }
 
-void checkReleases(PeriodicTask* &periodicTasks, uint8_t pCount, int msec){
+void checkReleases(PeriodicTask* periodicTasks, uint8_t pCount, int msec){
 	for (int i = 0; i < pCount; i++){
 		if (!((msec+1)%periodicTasks[i].T)) periodicTasks[i].ran = false;
 	}
 }
 
-void Simulate(Simulation* &plan) {
+void Simulate(Simulation* plan) {
 	//this is edf
 //	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount*sizeof(PeriodicTask));
 	sortTasks(plan->pTasks, plan->pCount);
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
 		buff[eos] = 0; // create null pointer to aid atoi
 		task->C = atoi(buff + bos);
 		//the task runtime
-		task->R = atoi(buff + bos);
+		task->R = task->C;
 		
 		// Get the period
 		bos = eos++;
