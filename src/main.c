@@ -6,7 +6,9 @@
 typedef struct {
 	char* ID;
 	uint16_t C;
+	uint16_t R;
 	uint16_t T;
+	bool ran;
 } PeriodicTask;
 
 typedef struct {
@@ -26,8 +28,59 @@ typedef struct {
 	AperiodicTask* aTasks;
 } Simulation;
 
-void Simulate(Simulation* plan) {
-	
+void sortTasks(PeriodicTask* &tasks, uint8_t pCount){
+	//put tasks in order by priority
+	for (int i = 0; i < pCount; i++){
+		for (int j = i+1; j < pCount; j++){
+			if (tasks[j].T < tasks[i].T){
+				PeriodicTask temp = tasks[i];
+				tasks[i] = tasks[j];
+				tasks[j] = temp;
+			} else if (tasks[j].T == tasks[i].T){
+				if (tasks[j].C > tasks[i].C){
+					PeriodicTask temp = tasks[i];
+					tasks[i] = tasks[j];
+					tasks[j] = temp;
+				}
+			}
+		}
+	}
+}
+
+uint8_t checkToRun(PeriodicTask* periodicTasks, uint8_t pCount){
+	for (int i = 0; i < pCount; i++){
+		if (!periodicTasks[i].ran){
+			return i;
+		}
+	}
+	return pCount;
+}
+
+void checkReleases(PeriodicTask* &periodicTasks, uint8_t pCount, int msec){
+	for (int i = 0; i < pCount; i++){
+		if (!((msec+1)%periodicTasks[i].T)) periodicTasks[i].ran = false;
+	}
+}
+
+void Simulate(Simulation* &plan) {
+	//this is edf
+//	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount*sizeof(PeriodicTask));
+	sortTasks(plan->pTasks, plan->pCount);
+	uint8_t running;
+	for (int i = 0; i < plan->time; i++){
+		running = checkToRun(plan->pTasks, plan->pCount);
+		if (running < plan->pCount){
+			printf("%d : %s ", i, plan->pTasks[running].ID);
+		} else {
+			printf("%d : %c ", i, '-');
+		}
+		plan->pTasks[running].R--;
+		if (plan->pTasks[running].R <= 0){
+			plan->pTasks[running].ran = true;
+			plan->pTasks[running].R = plan->pTasks[running].C;
+		}
+		checkReleases(plan->pTasks, plan->pCount, i);
+	}
 }
 
 #define BUFF_N 256
@@ -41,13 +94,13 @@ int main(int argc, char** argv) {
 	
 	FILE* fin = fopen(filein, "r");
 	
-	size_t buffsize = 256;
+	size_t buffsize = 456;
 	char* buff = (char*)calloc(sizeof(char), buffsize);
-	
+
 	// Parse the file to get pCount
 	fgets(buff, buffsize, fin);
 	plan->pCount = atoi(buff);
-	
+
 	// Parse the file to get time
 	fgets(buff, buffsize, fin);
 	plan->time = atoi(buff);
@@ -82,6 +135,8 @@ int main(int argc, char** argv) {
 		// A fully rigorous program would probably do some validation here
 		buff[eos] = 0; // create null pointer to aid atoi
 		task->C = atoi(buff + bos);
+		//the task runtime
+		task->R = atoi(buff + bos);
 		
 		// Get the period
 		bos = eos++;
@@ -90,6 +145,9 @@ int main(int argc, char** argv) {
 		// A fully rigorous program would probably do some validation here
 		buff[eos] = 0; // create null pointer to aid atoi
 		task->T = atoi(buff + bos);
+
+		//bool to help prioritize
+		task->ran = false;
 		
 		printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", i, task->ID, task->C, task->T);
 	}
