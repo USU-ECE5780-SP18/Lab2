@@ -110,9 +110,8 @@ void RMSchedule(Simulation* plan){
 				task_set[running]->ran = true;
 				task_set[running]->R = task_set[running]->C;
 			}
-			if (task_set[running]->ID != task_set[previous]->ID &&
-				task_set[previous]->R != task_set[previous]->C &&
-				previous != plan->pCount){
+			if (previous != plan->pCount && task_set[running]->ID != task_set[previous]->ID &&
+				task_set[previous]->R != task_set[previous]->C){
 				fprintf(plan->fout, "%s was preempted.\n", task_set[previous]->ID);
 			}
 		} else {
