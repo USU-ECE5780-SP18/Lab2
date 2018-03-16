@@ -64,7 +64,7 @@ void checkReleases(PeriodicTask* periodicTasks, uint8_t pCount, int msec){
 
 void Simulate(Simulation* plan) {
 	//this is edf
-//	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount*sizeof(PeriodicTask));
+//	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount);
 	sortTasks(plan->pTasks, plan->pCount);
 	uint8_t running;
 	uint8_t previous = 0;
@@ -90,18 +90,8 @@ void Simulate(Simulation* plan) {
 	}
 }
 
-#define BUFF_N 256
-int main(int argc, char** argv) {
-	const char* filein = argv[1];
-	const char* fileout = argv[2];
-	
-	printf("The input file: %s\nThe output file: %s\r\n", filein, fileout);
-	
-	Simulation* plan = (Simulation*)calloc(sizeof(Simulation), 1);
-	
-	FILE* fin = fopen(filein, "r");
-	
-	size_t buffsize = 456;
+void ParseFile(Simulation* Plan, FILE* fin) {
+	size_t buffsize = 128;
 	char* buff = (char*)calloc(sizeof(char), buffsize);
 
 	// Parse the file to get pCount
@@ -201,18 +191,27 @@ int main(int argc, char** argv) {
 		
 		printf("aTasks[%i]: {ID: \"%s\", C: %i, r: %i}\n", i, task->ID, task->C, task->r);
 	}
+}
+
+int main(int argc, char** argv) {
+	const char* filein = argv[1];
+	const char* fileout = argv[2];
 	
-	// Cleanup the input file buffer
+	printf("The input file: %s\nThe output file: %s\r\n", filein, fileout);
+	
+	Simulation* plan = (Simulation*)calloc(sizeof(Simulation), 1);
+	
+	// Parse the input file
+	FILE* fin = fopen(filein, "r");
+	ParseFile(plan, fin);
 	fclose(fin);
 	
-	plan->fout = fopen(fileout, "w");
-	
 	// Run the simulation
+	plan->fout = fopen(fileout, "w");
 	Simulate(plan);
+	fclose(plan->fout);
 	
 	// Cleanup after ourselves
-	fclose(plan->fout);
-
 	for (int i = 0; i < plan->pCount; ++i) {
 		free(plan->pTasks[i].ID);
 	}
