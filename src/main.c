@@ -298,7 +298,7 @@ void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, Simul
 		periodicTasks[i]->P = periodicTasks[i]->T - ((msec+1)%periodicTasks[i]->T);
 		if (periodicTasks[i]->P == periodicTasks[i]->T) {
 			if (periodicTasks[i]->R != periodicTasks[i]->C) {
-				reportPreemption(plan, periodicTasks[i]->rIndex);
+				reportDeadlineMissed(plan, periodicTasks[i]->rIndex);
 				
 				periodicTasks[i]->R = periodicTasks[i]->C;
 			}
