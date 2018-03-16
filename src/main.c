@@ -9,6 +9,7 @@ typedef struct {
 	uint16_t R;
 	uint16_t T;
 	bool ran;
+	uint8_t P;
 } PeriodicTask;
 
 typedef struct {
@@ -56,15 +57,19 @@ uint8_t checkToRun(PeriodicTask* periodicTasks, uint8_t pCount){
 	return pCount;
 }
 
-void checkReleases(PeriodicTask* periodicTasks, uint8_t pCount, int msec){
+void checkReleases(PeriodicTask* periodicTasks, uint8_t pCount, int msec, FILE* fout){
 	for (int i = 0; i < pCount; i++){
-		if (!((msec+1)%periodicTasks[i].T)) periodicTasks[i].ran = false;
+		if (!((msec+1)%periodicTasks[i].T)){
+			if (periodicTasks[i].R != periodicTasks[i].C){
+				fprintf(fout, "%s has missed its deadline\n", periodicTasks[i].ID);
+				periodicTasks[i].R = periodicTasks[i].C;
+			}
+			periodicTasks[i].ran = false;
+		}
 	}
 }
 
-void Simulate(Simulation* plan) {
-	//this is edf
-//	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount*sizeof(PeriodicTask));
+void RMSchedule(Simulation* plan){
 	sortTasks(plan->pTasks, plan->pCount);
 	uint8_t running;
 	uint8_t previous = 0;
@@ -78,16 +83,29 @@ void Simulate(Simulation* plan) {
 				plan->pTasks[running].R = plan->pTasks[running].C;
 			}
 			if (plan->pTasks[running].ID != plan->pTasks[previous].ID &&
-					plan->pTasks[previous].R != plan->pTasks[previous].C &&
-					previous != plan->pCount){
+				plan->pTasks[previous].R != plan->pTasks[previous].C &&
+				previous != plan->pCount){
 				fprintf(plan->fout, "%s was preempted.\n", plan->pTasks[previous].ID);
 			}
 		} else {
 			fprintf(plan->fout, "%d : %s\n", i, "slack");
 		}
-		checkReleases(plan->pTasks, plan->pCount, i);
+		checkReleases(plan->pTasks, plan->pCount, i, plan->fout);
 		previous = running;
 	}
+}
+
+void EDFSchedule(Simulation* plan){
+
+}
+
+void Simulate(Simulation* plan) {
+	//this is edf
+//	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount));
+	fprintf(plan->fout, "------------- Rate Monotonic --------------");
+	RMSchedule(plan);
+	fprintf(plan->fout, "------------- Earliest Deadline First --------------");
+	EDFSchedule(plan);
 }
 
 #define BUFF_N 256
