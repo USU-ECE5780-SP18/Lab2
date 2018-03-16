@@ -90,7 +90,7 @@ void Simulate(Simulation* plan) {
 	}
 }
 
-void ParseFile(Simulation* Plan, FILE* fin) {
+void ParseFile(Simulation* plan, FILE* fin) {
 	size_t buffsize = 128;
 	char* buff = (char*)calloc(sizeof(char), buffsize);
 
