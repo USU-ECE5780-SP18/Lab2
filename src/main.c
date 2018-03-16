@@ -4,6 +4,7 @@
 #include <string.h>
 
 typedef struct {
+	uint8_t rIndex;
 	char* ID;
 	uint16_t C;
 	uint16_t T;
@@ -14,6 +15,7 @@ typedef struct {
 } PeriodicTask;
 
 typedef struct {
+	uint8_t rIndex;
 	char* ID;
 	uint16_t C;
 	uint16_t r;
@@ -160,9 +162,6 @@ void reportInit(Simulation* plan) {
 	clearRow(buff, reporter->time, reporter->taskCount);
 }
 
-inline uint8_t pId(Simulation* plan, uint8_t index) { return index; }
-inline uint8_t aId(Simulation* plan, uint8_t index) { return plan->pCount + index; }
-
 void reportExecution(Simulation* plan, uint8_t rId) {
 	SimReporter* reporter = &(plan->reporter);
 	char* buff = reporter->tableBuff;
@@ -208,7 +207,6 @@ void reportFlushRow(Simulation* plan) {
 	
 	// Increment time and reset the buffer
 	clearRow(buff, ++(reporter->time), reporter->taskCount);
-	
 }
 
 void reportFlushAll(Simulation* plan) {
@@ -300,9 +298,7 @@ void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, Simul
 		periodicTasks[i]->P = periodicTasks[i]->T - ((msec+1)%periodicTasks[i]->T);
 		if (periodicTasks[i]->P == periodicTasks[i]->T) {
 			if (periodicTasks[i]->R != periodicTasks[i]->C) {
-				// FIX: i is an index of task_set, I need an index of pTasks
-				reportPreemption(plan, pId(plan, i));
-				// FIX: i is an index of task_set, I need an index of pTasks
+				reportPreemption(plan, periodicTasks[i]->rIndex);
 				
 				periodicTasks[i]->R = periodicTasks[i]->C;
 			}
@@ -344,9 +340,7 @@ void RMSchedule(Simulation* plan) {
 	for (int i = 0; i < plan->time; i++) {
 		running = checkToRun(task_set, plan->pCount);
 		if (running < plan->pCount) {
-			// FIX: running is an index of task_set, I need an index of pTasks
-			reportExecution(plan, pId(plan, running));
-			// FIX: running is an index of task_set, I need an index of pTasks
+			reportExecution(plan, task_set[running]->rIndex);
 			
 			task_set[running]->R--;
 			if (task_set[running]->R == 0) {
@@ -355,10 +349,7 @@ void RMSchedule(Simulation* plan) {
 			}
 			if (previous != plan->pCount && task_set[running]->ID != task_set[previous]->ID &&
 				task_set[previous]->R != task_set[previous]->C) {
-				
-				// FIX: running is an index of task_set, I need an index of pTasks
-				reportPreemption(plan, pId(plan, running));
-				// FIX: running is an index of task_set, I need an index of pTasks
+				reportPreemption(plan, task_set[running]->rIndex);
 			}
 		}
 		reportFlushRow(plan);
@@ -383,9 +374,7 @@ void EDFSchedule(Simulation* plan) {
 	for (int i = 0; i < plan->time; i++) {
 		running = checkToRun(task_set, plan->pCount);
 		if (running < plan->pCount) {
-			// FIX: running is an index of task_set, I need an index of pTasks
-			reportExecution(plan, pId(plan, running));
-			// FIX: running is an index of task_set, I need an index of pTasks
+			reportExecution(plan, task_set[running]->rIndex);
 			
 			task_set[running]->R--;
 			if (task_set[running]->R == 0) {
@@ -394,10 +383,7 @@ void EDFSchedule(Simulation* plan) {
 			}
 			if (previous != plan->pCount && task_set[running]->ID != task_set[previous]->ID &&
 				task_set[previous]->R != task_set[previous]->C ) {
-				
-				// FIX: running is an index of task_set, I need an index of pTasks
-				reportPreemption(plan, pId(plan, running));
-				// FIX: running is an index of task_set, I need an index of pTasks
+				reportPreemption(plan, task_set[running]->rIndex);
 			}
 		}
 		reportFlushRow(plan);
@@ -411,76 +397,76 @@ void EDFSchedule(Simulation* plan) {
 void Simulate(Simulation* plan) {
 	fprintf(plan->reporter.fout, "------------- Test Table Output --------------\r\n");
 	reportInit(plan);
-	reportRelease(plan, pId(plan, 0)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 1)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 2)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 3)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 4)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 0)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 1)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 2)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 3)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 4)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 0)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 1)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 2)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 3)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 4)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 0)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 1)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 2)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 3)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 4)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 0)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 1)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 2)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 3)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 4)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 0)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 1)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 2)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 3)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 4)); reportFlushRow(plan);
-	reportExecution(plan, pId(plan, 0)); reportFlushRow(plan);
-	reportExecution(plan, pId(plan, 1)); reportFlushRow(plan);
-	reportExecution(plan, pId(plan, 2)); reportFlushRow(plan);
-	reportExecution(plan, pId(plan, 3)); reportFlushRow(plan);
-	reportExecution(plan, pId(plan, 4)); reportFlushRow(plan);
-	reportExecution(plan, aId(plan, 0)); reportFlushRow(plan);
-	reportExecution(plan, aId(plan, 1)); reportFlushRow(plan);
-	reportExecution(plan, aId(plan, 2)); reportFlushRow(plan);
-	reportExecution(plan, aId(plan, 3)); reportFlushRow(plan);
-	reportExecution(plan, aId(plan, 4)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 0)); reportExecution(plan, pId(plan, 0)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 1)); reportExecution(plan, pId(plan, 1)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 2)); reportExecution(plan, pId(plan, 2)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 3)); reportExecution(plan, pId(plan, 3)); reportFlushRow(plan);
-	reportRelease(plan, pId(plan, 4)); reportExecution(plan, pId(plan, 4)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 0)); reportExecution(plan, aId(plan, 0)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 1)); reportExecution(plan, aId(plan, 1)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 2)); reportExecution(plan, aId(plan, 2)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 3)); reportExecution(plan, aId(plan, 3)); reportFlushRow(plan);
-	reportRelease(plan, aId(plan, 4)); reportExecution(plan, aId(plan, 4)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 0)); reportExecution(plan, pId(plan, 0)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 1)); reportExecution(plan, pId(plan, 1)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 2)); reportExecution(plan, pId(plan, 2)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 3)); reportExecution(plan, pId(plan, 3)); reportFlushRow(plan);
-	reportPreemption(plan, pId(plan, 4)); reportExecution(plan, pId(plan, 4)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 0)); reportExecution(plan, aId(plan, 0)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 1)); reportExecution(plan, aId(plan, 1)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 2)); reportExecution(plan, aId(plan, 2)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 3)); reportExecution(plan, aId(plan, 3)); reportFlushRow(plan);
-	reportPreemption(plan, aId(plan, 4)); reportExecution(plan, aId(plan, 4)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 0)); reportExecution(plan, pId(plan, 0)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 1)); reportExecution(plan, pId(plan, 1)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 2)); reportExecution(plan, pId(plan, 2)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 3)); reportExecution(plan, pId(plan, 3)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, pId(plan, 4)); reportExecution(plan, pId(plan, 4)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 0)); reportExecution(plan, aId(plan, 0)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 1)); reportExecution(plan, aId(plan, 1)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 2)); reportExecution(plan, aId(plan, 2)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 3)); reportExecution(plan, aId(plan, 3)); reportFlushRow(plan);
-	reportDeadlineMissed(plan, aId(plan, 4)); reportExecution(plan, aId(plan, 4)); reportFlushRow(plan);
+	reportRelease(plan, 0); reportFlushRow(plan);
+	reportRelease(plan, 1); reportFlushRow(plan);
+	reportRelease(plan, 2); reportFlushRow(plan);
+	reportRelease(plan, 3); reportFlushRow(plan);
+	reportRelease(plan, 4); reportFlushRow(plan);
+	reportRelease(plan, 5); reportFlushRow(plan);
+	reportRelease(plan, 6); reportFlushRow(plan);
+	reportRelease(plan, 7); reportFlushRow(plan);
+	reportRelease(plan, 8); reportFlushRow(plan);
+	reportRelease(plan, 9); reportFlushRow(plan);
+	reportPreemption(plan, 0); reportFlushRow(plan);
+	reportPreemption(plan, 1); reportFlushRow(plan);
+	reportPreemption(plan, 2); reportFlushRow(plan);
+	reportPreemption(plan, 3); reportFlushRow(plan);
+	reportPreemption(plan, 4); reportFlushRow(plan);
+	reportPreemption(plan, 5); reportFlushRow(plan);
+	reportPreemption(plan, 6); reportFlushRow(plan);
+	reportPreemption(plan, 7); reportFlushRow(plan);
+	reportPreemption(plan, 8); reportFlushRow(plan);
+	reportPreemption(plan, 9); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 0); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 1); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 2); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 3); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 4); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 5); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 6); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 7); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 8); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 9); reportFlushRow(plan);
+	reportExecution(plan, 0); reportFlushRow(plan);
+	reportExecution(plan, 1); reportFlushRow(plan);
+	reportExecution(plan, 2); reportFlushRow(plan);
+	reportExecution(plan, 3); reportFlushRow(plan);
+	reportExecution(plan, 4); reportFlushRow(plan);
+	reportExecution(plan, 5); reportFlushRow(plan);
+	reportExecution(plan, 6); reportFlushRow(plan);
+	reportExecution(plan, 7); reportFlushRow(plan);
+	reportExecution(plan, 8); reportFlushRow(plan);
+	reportExecution(plan, 9); reportFlushRow(plan);
+	reportRelease(plan, 0); reportExecution(plan, 0); reportFlushRow(plan);
+	reportRelease(plan, 1); reportExecution(plan, 1); reportFlushRow(plan);
+	reportRelease(plan, 2); reportExecution(plan, 2); reportFlushRow(plan);
+	reportRelease(plan, 3); reportExecution(plan, 3); reportFlushRow(plan);
+	reportRelease(plan, 4); reportExecution(plan, 4); reportFlushRow(plan);
+	reportRelease(plan, 5); reportExecution(plan, 5); reportFlushRow(plan);
+	reportRelease(plan, 6); reportExecution(plan, 6); reportFlushRow(plan);
+	reportRelease(plan, 7); reportExecution(plan, 7); reportFlushRow(plan);
+	reportRelease(plan, 8); reportExecution(plan, 8); reportFlushRow(plan);
+	reportRelease(plan, 9); reportExecution(plan, 9); reportFlushRow(plan);
+	reportPreemption(plan, 0); reportExecution(plan, 0); reportFlushRow(plan);
+	reportPreemption(plan, 1); reportExecution(plan, 1); reportFlushRow(plan);
+	reportPreemption(plan, 2); reportExecution(plan, 2); reportFlushRow(plan);
+	reportPreemption(plan, 3); reportExecution(plan, 3); reportFlushRow(plan);
+	reportPreemption(plan, 4); reportExecution(plan, 4); reportFlushRow(plan);
+	reportPreemption(plan, 5); reportExecution(plan, 5); reportFlushRow(plan);
+	reportPreemption(plan, 6); reportExecution(plan, 6); reportFlushRow(plan);
+	reportPreemption(plan, 7); reportExecution(plan, 7); reportFlushRow(plan);
+	reportPreemption(plan, 8); reportExecution(plan, 8); reportFlushRow(plan);
+	reportPreemption(plan, 9); reportExecution(plan, 9); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 0); reportExecution(plan, 0); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 1); reportExecution(plan, 1); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 2); reportExecution(plan, 2); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 3); reportExecution(plan, 3); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 4); reportExecution(plan, 4); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 5); reportExecution(plan, 5); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 6); reportExecution(plan, 6); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 7); reportExecution(plan, 7); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 8); reportExecution(plan, 8); reportFlushRow(plan);
+	reportDeadlineMissed(plan, 9); reportExecution(plan, 9); reportFlushRow(plan);
 	reportFlushAll(plan);
 	fprintf(plan->reporter.fout, "\r\n");
 	
@@ -520,6 +506,9 @@ void ParseFile(Simulation* plan, FILE* fin) {
 		line_n = getline(&buff, &buffsize, fin);
 		
 		PeriodicTask* task = (plan->pTasks) + i;
+		
+		// Set the index for the output table
+		task->rIndex = i;
 		
 		// Get the ID
 		int eos = 0; // end of string
@@ -562,6 +551,9 @@ void ParseFile(Simulation* plan, FILE* fin) {
 		line_n = getline(&buff, &buffsize, fin);
 		
 		AperiodicTask* task = (plan->aTasks) + i;
+		
+		// Set the index for the output table
+		task->rIndex = plan->pCount + i;
 		
 		// Get the ID
 		int eos = 0; // end of string
