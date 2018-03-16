@@ -78,13 +78,13 @@ void computePriority(PeriodicTask** tasks, uint8_t pCount){
 				PeriodicTask* temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
-			} //else if (tasks[j]->P == tasks[i]->P){
-//				if (tasks[j]->R > tasks[i]->R){
-//					PeriodicTask* temp = tasks[i];
-//					tasks[i] = tasks[j];
-//					tasks[j] = temp;
-//				}
-//			}
+			} else if (tasks[j]->P == tasks[i]->P){
+				if (tasks[j]->R <= tasks[i]->R){
+					PeriodicTask* temp = tasks[i];
+					tasks[i] = tasks[j];
+					tasks[j] = temp;
+				}
+			}
 		}
 	}
 }
