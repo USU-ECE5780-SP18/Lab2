@@ -10,7 +10,7 @@ typedef struct {
 
 	uint16_t R;
 	bool ran;
-	uint8_t P;
+	uint16_t P;
 } PeriodicTask;
 
 typedef struct {
@@ -60,7 +60,8 @@ uint8_t checkToRun(PeriodicTask** periodicTasks, uint8_t pCount){
 
 void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, FILE* fout){
 	for (int i = 0; i < pCount; i++){
-		if (!((msec+1)%periodicTasks[i]->T)){
+		periodicTasks[i]->P = periodicTasks[i]->T - ((msec+1)%periodicTasks[i]->T);
+		if (periodicTasks[i]->P == periodicTasks[i]->T){
 			if (periodicTasks[i]->R != periodicTasks[i]->C){
 				fprintf(fout, "%s has missed its deadline\n", periodicTasks[i]->ID);
 				periodicTasks[i]->R = periodicTasks[i]->C;
@@ -70,9 +71,31 @@ void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, FILE*
 	}
 }
 
+void computePriority(PeriodicTask** tasks, uint8_t pCount){
+	for (int i = 0; i < pCount; i++){
+		for (int j = i+1; j < pCount; j++){
+			if (tasks[j]->P < tasks[i]->P && !tasks[i]->ran){
+				PeriodicTask* temp = tasks[i];
+				tasks[i] = tasks[j];
+				tasks[j] = temp;
+			} //else if (tasks[j]->P == tasks[i]->P){
+//				if (tasks[j]->R > tasks[i]->R){
+//					PeriodicTask* temp = tasks[i];
+//					tasks[i] = tasks[j];
+//					tasks[j] = temp;
+//				}
+//			}
+		}
+	}
+}
+
 void RMSchedule(Simulation* plan){
 	PeriodicTask** task_set = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
 	for (int i = 0; i < plan->pCount; i++){
+		//the task runtime
+		plan->pTasks[i].R = plan->pTasks[i].C;
+		//bool to help prioritize
+		plan->pTasks[i].ran = false;
 		task_set[i] = plan->pTasks + i;
 	}
 	sortTasks(task_set, plan->pCount);
@@ -102,14 +125,44 @@ void RMSchedule(Simulation* plan){
 }
 
 void EDFSchedule(Simulation* plan){
-
+	PeriodicTask** task_set = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
+	for (int i = 0; i < plan->pCount; i++){
+		//the task runtime
+		plan->pTasks[i].R = plan->pTasks[i].C;
+		//bool to help prioritize
+		plan->pTasks[i].ran = false;
+		task_set[i] = plan->pTasks + i;
+	}
+	sortTasks(task_set, plan->pCount);
+	uint8_t running;
+	uint8_t previous = 0;
+	for (int i = 0; i < plan->time; i++){
+		running = checkToRun(task_set, plan->pCount);
+		if (running < plan->pCount){
+			fprintf(plan->fout, "%d : %s\n", i, task_set[running]->ID);
+			task_set[running]->R--;
+			if (task_set[running]->R == 0){
+				task_set[running]->ran = true;
+				task_set[running]->R = task_set[running]->C;
+			}
+			if (previous != plan->pCount && task_set[running]->ID != task_set[previous]->ID &&
+				task_set[previous]->R != task_set[previous]->C ){
+				fprintf(plan->fout, "%s was preempted.\n", task_set[previous]->ID);
+			}
+		} else {
+			fprintf(plan->fout, "%d : %s\n", i, "slack");
+		}
+		previous = running;
+		checkReleases(task_set, plan->pCount, i, plan->fout);
+		computePriority(task_set, plan->pCount);
+	}
+	free(task_set);
 }
 
 void Simulate(Simulation* plan) {
-//	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount));
-	fprintf(plan->fout, "------------- Rate Monotonic --------------");
+	fprintf(plan->fout, "------------- Rate Monotonic --------------\n");
 	RMSchedule(plan);
-	fprintf(plan->fout, "------------- Earliest Deadline First --------------");
+	fprintf(plan->fout, "------------- Earliest Deadline First --------------\n");
 	EDFSchedule(plan);
 }
 
@@ -154,9 +207,7 @@ void ParseFile(Simulation* plan, FILE* fin) {
 		// A fully rigorous program would probably do some validation here
 		buff[eos] = 0; // create null pointer to aid atoi
 		task->C = atoi(buff + bos);
-		//the task runtime
-		task->R = task->C;
-		
+
 		// Get the period
 		bos = eos++;
 		while (eos < line_n && buff[eos] == ' ') { ++eos; ++bos; } // Get rid of space
@@ -165,9 +216,6 @@ void ParseFile(Simulation* plan, FILE* fin) {
 		buff[eos] = 0; // create null pointer to aid atoi
 		task->T = atoi(buff + bos);
 
-		//bool to help prioritize
-		task->ran = false;
-		
 		printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", i, task->ID, task->C, task->T);
 	}
 	
