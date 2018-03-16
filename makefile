@@ -1,9 +1,15 @@
-lab2.exe: src/main.c reporter.o
-	g++ src/main.c reporter.o -lpthread -g -O0 -o lab2.exe
+lab2: bin/main.o bin/reporter.o
+	g++ bin/main.o bin/reporter.o -g -O0 -o lab2
 
-reporter.o: src/reporter.c src/reporter.h
-	g++ src/reporter.c -lpthread -g -O0 -c -o reporter.o
+bin/main.o: bin src/main.c
+	g++ src/main.c -lpthread -g -O0 -c -o bin/main.o
+
+bin/reporter.o: bin src/reporter.c src/reporter.h
+	g++ src/reporter.c -lpthread -g -O0 -c -o bin/reporter.o
+
+bin:
+	mkdir -p bin
 
 clean:
-	rm *.o
-	rm lab2.exe
+	rm bin/*.o
+	rm lab2
