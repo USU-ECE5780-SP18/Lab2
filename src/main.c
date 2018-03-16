@@ -10,7 +10,7 @@ typedef struct {
 
 	uint16_t R;
 	bool ran;
-	uint8_t P;
+	uint16_t P;
 } PeriodicTask;
 
 typedef struct {
@@ -267,16 +267,16 @@ void reportFlushAll(Simulation* plan) {
 		pCount);
 }
 
-void sortTasks(PeriodicTask** tasks, uint8_t pCount){
+void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
 	//put tasks in order by priority
-	for (int i = 0; i < pCount; i++){
-		for (int j = i+1; j < pCount; j++){
-			if (tasks[j]->T < tasks[i]->T){
+	for (int i = 0; i < pCount; i++) {
+		for (int j = i+1; j < pCount; j++) {
+			if (tasks[j]->T < tasks[i]->T) {
 				PeriodicTask* temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
-			} else if (tasks[j]->T == tasks[i]->T){
-				if (tasks[j]->C > tasks[i]->C){
+			} else if (tasks[j]->T == tasks[i]->T) {
+				if (tasks[j]->C > tasks[i]->C) {
 					PeriodicTask* temp = tasks[i];
 					tasks[i] = tasks[j];
 					tasks[j] = temp;
@@ -286,20 +286,24 @@ void sortTasks(PeriodicTask** tasks, uint8_t pCount){
 	}
 }
 
-uint8_t checkToRun(PeriodicTask** periodicTasks, uint8_t pCount){
-	for (int i = 0; i < pCount; i++){
-		if (!periodicTasks[i]->ran){
+uint8_t checkToRun(PeriodicTask** periodicTasks, uint8_t pCount) {
+	for (int i = 0; i < pCount; i++) {
+		if (!periodicTasks[i]->ran) {
 			return i;
 		}
 	}
 	return pCount;
 }
 
-void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, FILE* fout){
-	for (int i = 0; i < pCount; i++){
-		if (!((msec+1)%periodicTasks[i]->T)){
-			if (periodicTasks[i]->R != periodicTasks[i]->C){
-				fprintf(fout, "%s has missed its deadline\n", periodicTasks[i]->ID);
+void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, Simulation* plan) {
+	for (int i = 0; i < pCount; i++) {
+		periodicTasks[i]->P = periodicTasks[i]->T - ((msec+1)%periodicTasks[i]->T);
+		if (periodicTasks[i]->P == periodicTasks[i]->T) {
+			if (periodicTasks[i]->R != periodicTasks[i]->C) {
+				// FIX: i is an index of task_set, I need an index of pTasks
+				reportPreemption(plan, pId(plan, i));
+				// FIX: i is an index of task_set, I need an index of pTasks
+				
 				periodicTasks[i]->R = periodicTasks[i]->C;
 			}
 			periodicTasks[i]->ran = false;
@@ -307,43 +311,105 @@ void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, FILE*
 	}
 }
 
+void computePriority(PeriodicTask** tasks, uint8_t pCount) {
+	for (int i = 0; i < pCount; i++) {
+		for (int j = i+1; j < pCount; j++) {
+			if (tasks[j]->P < tasks[i]->P && !tasks[i]->ran) {
+				PeriodicTask* temp = tasks[i];
+				tasks[i] = tasks[j];
+				tasks[j] = temp;
+			} else if (tasks[j]->P == tasks[i]->P) {
+				if (tasks[j]->R <= tasks[i]->R) {
+					PeriodicTask* temp = tasks[i];
+					tasks[i] = tasks[j];
+					tasks[j] = temp;
+				}
+			}
+		}
+	}
+}
+
 void RMSchedule(Simulation* plan) {
 	PeriodicTask** task_set = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
 	for (int i = 0; i < plan->pCount; i++) {
+		//the task runtime
+		plan->pTasks[i].R = plan->pTasks[i].C;
+		//bool to help prioritize
+		plan->pTasks[i].ran = false;
 		task_set[i] = plan->pTasks + i;
 	}
 	sortTasks(task_set, plan->pCount);
 	uint8_t running;
 	uint8_t previous = 0;
-	for (int i = 0; i < plan->time; i++){
+	for (int i = 0; i < plan->time; i++) {
 		running = checkToRun(task_set, plan->pCount);
-		if (running < plan->pCount){
-			//fprintf(plan->fout, "%d : %s\n", i, task_set[running]->ID);
+		if (running < plan->pCount) {
+			// FIX: running is an index of task_set, I need an index of pTasks
+			reportExecution(plan, pId(plan, running));
+			// FIX: running is an index of task_set, I need an index of pTasks
+			
 			task_set[running]->R--;
-			if (task_set[running]->R == 0){
+			if (task_set[running]->R == 0) {
 				task_set[running]->ran = true;
 				task_set[running]->R = task_set[running]->C;
 			}
-			if (task_set[running]->ID != task_set[previous]->ID &&
-				task_set[previous]->R != task_set[previous]->C &&
-				previous != plan->pCount){
-				//fprintf(plan->fout, "%s was preempted.\n", task_set[previous]->ID);
+			if (previous != plan->pCount && task_set[running]->ID != task_set[previous]->ID &&
+				task_set[previous]->R != task_set[previous]->C) {
+				
+				// FIX: running is an index of task_set, I need an index of pTasks
+				reportPreemption(plan, pId(plan, running));
+				// FIX: running is an index of task_set, I need an index of pTasks
 			}
-		} else {
-			//fprintf(plan->fout, "%d : %s\n", i, "slack");
 		}
-		//checkReleases(task_set, plan->pCount, i, plan->fout);
+		reportFlushRow(plan);
+		checkReleases(task_set, plan->pCount, i, plan);
 		previous = running;
 	}
 	free(task_set);
 }
 
-void EDFSchedule(Simulation* plan){
-
+void EDFSchedule(Simulation* plan) {
+	PeriodicTask** task_set = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
+	for (int i = 0; i < plan->pCount; i++) {
+		//the task runtime
+		plan->pTasks[i].R = plan->pTasks[i].C;
+		//bool to help prioritize
+		plan->pTasks[i].ran = false;
+		task_set[i] = plan->pTasks + i;
+	}
+	sortTasks(task_set, plan->pCount);
+	uint8_t running;
+	uint8_t previous = 0;
+	for (int i = 0; i < plan->time; i++) {
+		running = checkToRun(task_set, plan->pCount);
+		if (running < plan->pCount) {
+			// FIX: running is an index of task_set, I need an index of pTasks
+			reportExecution(plan, pId(plan, running));
+			// FIX: running is an index of task_set, I need an index of pTasks
+			
+			task_set[running]->R--;
+			if (task_set[running]->R == 0) {
+				task_set[running]->ran = true;
+				task_set[running]->R = task_set[running]->C;
+			}
+			if (previous != plan->pCount && task_set[running]->ID != task_set[previous]->ID &&
+				task_set[previous]->R != task_set[previous]->C ) {
+				
+				// FIX: running is an index of task_set, I need an index of pTasks
+				reportPreemption(plan, pId(plan, running));
+				// FIX: running is an index of task_set, I need an index of pTasks
+			}
+		}
+		reportFlushRow(plan);
+		previous = running;
+		checkReleases(task_set, plan->pCount, i, plan);
+		computePriority(task_set, plan->pCount);
+	}
+	free(task_set);
 }
 
 void Simulate(Simulation* plan) {
-	fprintf(plan->reporter.fout, "------------- Rate Monotonic --------------\r\n");
+	fprintf(plan->reporter.fout, "------------- Test Table Output --------------\r\n");
 	reportInit(plan);
 	reportRelease(plan, pId(plan, 0)); reportFlushRow(plan);
 	reportRelease(plan, pId(plan, 1)); reportFlushRow(plan);
@@ -416,9 +482,18 @@ void Simulate(Simulation* plan) {
 	reportDeadlineMissed(plan, aId(plan, 3)); reportExecution(plan, aId(plan, 3)); reportFlushRow(plan);
 	reportDeadlineMissed(plan, aId(plan, 4)); reportExecution(plan, aId(plan, 4)); reportFlushRow(plan);
 	reportFlushAll(plan);
-	//RMSchedule(plan);
-	//fprintf(plan->fout, "------------- Earliest Deadline First --------------");
-	//EDFSchedule(plan);
+	fprintf(plan->reporter.fout, "\r\n");
+	
+	fprintf(plan->reporter.fout, "------------- Rate Monotonic --------------\r\n");
+	reportInit(plan);
+	RMSchedule(plan);
+	reportFlushAll(plan);
+	fprintf(plan->reporter.fout, "\r\n");
+	
+	fprintf(plan->reporter.fout, "------------- Earliest Deadline First --------------\r\n");
+	reportInit(plan);
+	EDFSchedule(plan);
+	reportFlushAll(plan);
 }
 
 void ParseFile(Simulation* plan, FILE* fin) {
@@ -462,9 +537,7 @@ void ParseFile(Simulation* plan, FILE* fin) {
 		// A fully rigorous program would probably do some validation here
 		buff[eos] = 0; // create null pointer to aid atoi
 		task->C = atoi(buff + bos);
-		//the task runtime
-		task->R = task->C;
-		
+
 		// Get the period
 		bos = eos++;
 		while (eos < line_n && buff[eos] == ' ') { ++eos; ++bos; } // Get rid of space
@@ -473,9 +546,6 @@ void ParseFile(Simulation* plan, FILE* fin) {
 		buff[eos] = 0; // create null pointer to aid atoi
 		task->T = atoi(buff + bos);
 
-		//bool to help prioritize
-		task->ran = false;
-		
 		printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", i, task->ID, task->C, task->T);
 	}
 	
