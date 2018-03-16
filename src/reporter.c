@@ -1,4 +1,6 @@
 #include "reporter.h"
+#include <stdlib.h>
+#include <string.h>
 
 // Outputs a number to the given column in the table
 // Has a 4 digit limit on numbers it can print to the column
