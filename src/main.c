@@ -6,8 +6,9 @@
 typedef struct {
 	char* ID;
 	uint16_t C;
-	uint16_t R;
 	uint16_t T;
+
+	uint16_t R;
 	bool ran;
 	uint8_t P;
 } PeriodicTask;
@@ -100,7 +101,6 @@ void EDFSchedule(Simulation* plan){
 }
 
 void Simulate(Simulation* plan) {
-	//this is edf
 //	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount));
 	fprintf(plan->fout, "------------- Rate Monotonic --------------");
 	RMSchedule(plan);
@@ -130,7 +130,6 @@ void ParseFile(Simulation* plan, FILE* fin) {
 	// Parse the file pCount times to get the data for each periodic task
 	for(int i = 0; i < plan->pCount; ++i) {
 		line_n = getline(&buff, &buffsize, fin);
-		printf("buff[%i]: %s", line_n, buff);
 		
 		PeriodicTask* task = (plan->pTasks) + i;
 		
@@ -178,7 +177,6 @@ void ParseFile(Simulation* plan, FILE* fin) {
 	// Parse the file aCount times to get the data for each periodic task
 	for(int i = 0; i < plan->pCount; ++i) {
 		line_n = getline(&buff, &buffsize, fin);
-		printf("buff[%i]: %s", line_n, buff);
 		
 		AperiodicTask* task = (plan->aTasks) + i;
 		
@@ -236,7 +234,6 @@ int main(int argc, char** argv) {
 	for (int i = 0; i < plan->aCount; ++i) {
 		free(plan->aTasks[i].ID);
 	}
-	
 	free(plan->pTasks);
 	free(plan->aTasks);
 	free(plan);
