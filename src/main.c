@@ -67,6 +67,7 @@ void Simulate(Simulation* plan) {
 //	PeriodicTask* task_set = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount*sizeof(PeriodicTask));
 	sortTasks(plan->pTasks, plan->pCount);
 	uint8_t running;
+	uint8_t previous = 0;
 	for (int i = 0; i < plan->time; i++){
 		running = checkToRun(plan->pTasks, plan->pCount);
 		if (running < plan->pCount){
@@ -76,10 +77,16 @@ void Simulate(Simulation* plan) {
 				plan->pTasks[running].ran = true;
 				plan->pTasks[running].R = plan->pTasks[running].C;
 			}
+			if (plan->pTasks[running].ID != plan->pTasks[previous].ID &&
+					plan->pTasks[previous].R != plan->pTasks[previous].C &&
+					previous != plan->pCount){
+				fprintf(plan->fout, "%s was preempted.\n", plan->pTasks[previous].ID);
+			}
 		} else {
 			fprintf(plan->fout, "%d : %s\n", i, "slack");
 		}
 		checkReleases(plan->pTasks, plan->pCount, i);
+		previous = running;
 	}
 }
 
