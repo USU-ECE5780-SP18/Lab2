@@ -30,17 +30,17 @@ typedef struct {
 	AperiodicTask* aTasks;
 } Simulation;
 
-void sortTasks(PeriodicTask* tasks, uint8_t pCount){
+void sortTasks(PeriodicTask** tasks, uint8_t pCount){
 	//put tasks in order by priority
 	for (int i = 0; i < pCount; i++){
 		for (int j = i+1; j < pCount; j++){
-			if (tasks[j].T < tasks[i].T){
-				PeriodicTask temp = tasks[i];
+			if (tasks[j]->T < tasks[i]->T){
+				PeriodicTask* temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
-			} else if (tasks[j].T == tasks[i].T){
-				if (tasks[j].C > tasks[i].C){
-					PeriodicTask temp = tasks[i];
+			} else if (tasks[j]->T == tasks[i]->T){
+				if (tasks[j]->C > tasks[i]->C){
+					PeriodicTask* temp = tasks[i];
 					tasks[i] = tasks[j];
 					tasks[j] = temp;
 				}
@@ -49,51 +49,56 @@ void sortTasks(PeriodicTask* tasks, uint8_t pCount){
 	}
 }
 
-uint8_t checkToRun(PeriodicTask* periodicTasks, uint8_t pCount){
+uint8_t checkToRun(PeriodicTask** periodicTasks, uint8_t pCount){
 	for (int i = 0; i < pCount; i++){
-		if (!periodicTasks[i].ran){
+		if (!periodicTasks[i]->ran){
 			return i;
 		}
 	}
 	return pCount;
 }
 
-void checkReleases(PeriodicTask* periodicTasks, uint8_t pCount, int msec, FILE* fout){
+void checkReleases(PeriodicTask** periodicTasks, uint8_t pCount, int msec, FILE* fout){
 	for (int i = 0; i < pCount; i++){
-		if (!((msec+1)%periodicTasks[i].T)){
-			if (periodicTasks[i].R != periodicTasks[i].C){
-				fprintf(fout, "%s has missed its deadline\n", periodicTasks[i].ID);
-				periodicTasks[i].R = periodicTasks[i].C;
+		if (!((msec+1)%periodicTasks[i]->T)){
+			if (periodicTasks[i]->R != periodicTasks[i]->C){
+				fprintf(fout, "%s has missed its deadline\n", periodicTasks[i]->ID);
+				periodicTasks[i]->R = periodicTasks[i]->C;
 			}
-			periodicTasks[i].ran = false;
+			periodicTasks[i]->ran = false;
 		}
 	}
 }
 
 void RMSchedule(Simulation* plan){
-	sortTasks(plan->pTasks, plan->pCount);
+	PeriodicTask** task_set = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
+	for (int i = 0; i < plan->pCount; i++){
+		task_set[i] = plan->pTasks + i;
+	}
+	sortTasks(task_set, plan->pCount);
 	uint8_t running;
 	uint8_t previous = 0;
 	for (int i = 0; i < plan->time; i++){
-		running = checkToRun(plan->pTasks, plan->pCount);
+		running = checkToRun(task_set, plan->pCount);
 		if (running < plan->pCount){
-			fprintf(plan->fout, "%d : %s\n", i, plan->pTasks[running].ID);
-			plan->pTasks[running].R--;
-			if (plan->pTasks[running].R == 0){
-				plan->pTasks[running].ran = true;
-				plan->pTasks[running].R = plan->pTasks[running].C;
+			fprintf(plan->fout, "%d : %s\n", i, task_set[running]->ID);
+			task_set[running]->R--;
+			if (task_set[running]->R == 0){
+				task_set[running]->ran = true;
+				task_set[running]->R = task_set[running]->C;
 			}
-			if (plan->pTasks[running].ID != plan->pTasks[previous].ID &&
-				plan->pTasks[previous].R != plan->pTasks[previous].C &&
+			if (task_set[running]->ID != task_set[previous]->ID &&
+				task_set[previous]->R != task_set[previous]->C &&
 				previous != plan->pCount){
-				fprintf(plan->fout, "%s was preempted.\n", plan->pTasks[previous].ID);
+				fprintf(plan->fout, "%s was preempted.\n", task_set[previous]->ID);
 			}
 		} else {
 			fprintf(plan->fout, "%d : %s\n", i, "slack");
 		}
-		checkReleases(plan->pTasks, plan->pCount, i, plan->fout);
+		checkReleases(task_set, plan->pCount, i, plan->fout);
 		previous = running;
 	}
+	free(task_set);
 }
 
 void EDFSchedule(Simulation* plan){
