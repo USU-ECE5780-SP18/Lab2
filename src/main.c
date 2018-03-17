@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 	FILE* fout = fopen(fileout, "w");
 
 	fprintf(fout, "------------------ Test Schedule ------------------\r\n");
-	WriteSchedule(fout, rmsched);
+	WriteSchedule(fout, sched);
 	fprintf(fout, "\r\n");
 
 	fprintf(fout, "------------------ Rate Monotonic -----------------\r\n");
