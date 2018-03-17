@@ -3,16 +3,16 @@
 #include "sched.h"
 #include <stdlib.h>
 
-void computePriority(RunningPeriodic* tasks, uint8_t pCount) {
-	for (int i = 0; i < pCount; i++) {
-		for (int j = i+1; j < pCount; j++) {
+void sortEDF(RunningTask* tasks, uint8_t total) {
+	for (int i = 0; i < total; i++) {
+		for (int j = i+1; j < total; j++) {
 			if (tasks[j].P < tasks[i].P && !tasks[i].ran) {
-				RunningPeriodic temp = tasks[i];
+				RunningTask temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
 			} else if (tasks[j].P == tasks[i].P) {
 				if (tasks[j].R < tasks[i].R) {
-					RunningPeriodic temp = tasks[i];
+					RunningTask temp = tasks[i];
 					tasks[i] = tasks[j];
 					tasks[j] = temp;
 				}
@@ -24,31 +24,57 @@ void computePriority(RunningPeriodic* tasks, uint8_t pCount) {
 Schedule* EdfSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
 
-	RunningPeriodic* task_set = (RunningPeriodic*)calloc(sizeof(RunningPeriodic), plan->pCount);
+	RunningTask* task_set = (RunningTask*)calloc(sizeof(RunningTask), plan->tasks);
+
 	for (int i = 0; i < plan->pCount; i++) {
 		//bool to help prioritize
 		task_set[i].ran = false;
 		task_set[i].periodicTask = plan->pTasks + i;
 		//the task runtime
 		task_set[i].R = task_set[i].periodicTask->C;
+		task_set[i].isPeriodic = true;
+		task_set[i].P = task_set[i].periodicTask->T;
+	}
+	for (int i = 0; i < plan->aCount; i++) {
+		//bool to help prioritize
+		task_set[i].ran = false;
+		task_set[i].aperiodicTask = plan->aTasks + i;
+		//the task runtime
+		task_set[i].R = task_set[i].aperiodicTask->C;
+		task_set[i].isPeriodic = false;
+		task_set[i].P = task_set[i].aperiodicTask->r + 500;
 	}
 
-	sortTasks(task_set, plan->pCount);
+	sortEDF(task_set, plan->tasks);
 	uint8_t running;
 	uint8_t previous = 0;
 	for (int i = 0; i < plan->duration; i++) {
-		running = checkToRun(task_set, plan->pCount);
-		if (running < plan->pCount) {
+		running = checkToRun(task_set, plan->tasks);
+		if (running < plan->tasks) {
+			RunningTask& task = task_set[running];
 
-			sched->activeTask[i] = task_set[running].periodicTask->rIndex;
+			PeriodicTask* taskGeneric;
 
-			task_set[running].R--;
-			if (task_set[running].R == 0) {
-				task_set[running].ran = true;
-				task_set[running].R = task_set[running].periodicTask->C;
+			if (task.isPeriodic) {
+				AperiodicTask* taskRef = task.periodicTask;
+				taskGeneric = taskRef;
 			}
-			if (previous != plan->pCount &&
-				task_set[running].periodicTask->ID != task_set[previous].periodicTask->ID &&
+			else {
+				AperiodicTask* taskRef = task.aperiodicTask;
+				taskGeneric = (PeriodicTask*)taskRef;
+			}
+
+			sched->activeTask[i] = taskGeneric->rIndex;
+
+			task.R--;
+			if (task.R == 0) {
+				task.ran = true;
+				if (task.isPeriodic){
+					task.R = taskGeneric->C;
+				}
+			}
+			if (previous != plan->tasks &&
+					taskGeneric->ID != task_set[previous].periodicTask->ID &&
 				task_set[previous].R != task_set[previous].periodicTask->C) {
 				sched->flags[((i-1) * plan->tasks) + task_set[previous].periodicTask->rIndex - 1] = STATUS_PREEMPTED;
 			}
@@ -56,7 +82,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 		}
 		previous = running;
 		checkReleases(task_set, plan->pCount, i, sched);
-		computePriority(task_set, plan->pCount);
+		sortEDF(task_set, plan->tasks);
 	}
 	free(task_set);
 	return sched;

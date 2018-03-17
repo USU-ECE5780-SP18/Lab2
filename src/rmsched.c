@@ -3,17 +3,17 @@
 #include "sched.h"
 #include <stdlib.h>
 
-void sortTasks(RunningPeriodic* tasks, uint8_t pCount) {
+void sortRM(RunningTask* tasks, uint8_t total) {
 	//put tasks in order by priority
-	for (int i = 0; i < pCount; i++) {
-		for (int j = i+1; j < pCount; j++) {
+	for (int i = 0; i < total; i++) {
+		for (int j = i+1; j < total; j++) {
 			if (tasks[j].periodicTask->T < tasks[i].periodicTask->T) {
-				RunningPeriodic temp = tasks[i];
+				RunningTask temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
 			} else if (tasks[j].periodicTask->T == tasks[i].periodicTask->T) {
 				if (tasks[j].periodicTask->C > tasks[i].periodicTask->C) {
-					RunningPeriodic temp = tasks[i];
+					RunningTask temp = tasks[i];
 					tasks[i] = tasks[j];
 					tasks[j] = temp;
 				}
@@ -22,7 +22,7 @@ void sortTasks(RunningPeriodic* tasks, uint8_t pCount) {
 	}
 }
 
-void checkReleases(RunningPeriodic* periodicTasks, uint8_t pCount, int msec, Schedule* sched) {
+void checkReleases(RunningTask* periodicTasks, uint8_t pCount, int msec, Schedule* sched) {
 	for (int i = 0; i < pCount; i++) {
 		periodicTasks[i].P = periodicTasks[i].periodicTask->T - ((msec+1)%periodicTasks[i].periodicTask->T);
 		if (periodicTasks[i].P == periodicTasks[i].periodicTask->T) {
@@ -38,29 +38,39 @@ void checkReleases(RunningPeriodic* periodicTasks, uint8_t pCount, int msec, Sch
 	}
 }
 
-uint8_t checkToRun(RunningPeriodic* periodicTasks, uint8_t pCount) {
-	for (int i = 0; i < pCount; i++) {
-		if (!periodicTasks[i].ran) {
+uint8_t checkToRun(RunningTask* tasks, uint8_t total) {
+	for (int i = 0; i < total; i++) {
+		if (!tasks[i].ran) {
 			return i;
 		}
 	}
-	return pCount;
+	return total;
 }
 
 Schedule* RmSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
 
 	//
-	RunningPeriodic* task_set = (RunningPeriodic*)calloc(sizeof(RunningPeriodic), plan->pCount);
-//	RunningAperiodic* task_set = (RunningAperiodic*)calloc(sizeof(RunningAperiodic), plan->aCount);
+	RunningTask* task_set = (RunningTask*)calloc(sizeof(RunningTask), plan->tasks);
 	for (int i = 0; i < plan->pCount; i++) {
 		//bool to help prioritize
 		task_set[i].ran = false;
 		task_set[i].periodicTask = plan->pTasks + i;
 		//the task runtime
 		task_set[i].R = task_set[i].periodicTask->C;
+		task_set[i].isPeriodic = true;
 	}
-	sortTasks(task_set, plan->pCount);
+	for (int i = 0; i < plan->aCount; i++) {
+		//bool to help prioritize
+		task_set[i].ran = false;
+		task_set[i].aperiodicTask = plan->aTasks + i;
+		//the task runtime
+		task_set[i].R = task_set[i].aperiodicTask->C;
+		task_set[i].isPeriodic = false;
+	}
+
+	//TODO change past here
+	sortRM(task_set, plan->pCount);
 	uint8_t running;
 	uint8_t previous = 0;
 	for (int i = 0; i < plan->duration; i++) {
