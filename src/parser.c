@@ -59,6 +59,7 @@ SimPlan* ParsePlan(const char* file) {
 		line_n = getline(&buff, &buffsize, fin);
 		PeriodicTask* task = (plan->pTasks) + i;
 		ParseTask(buff, line_n, task);
+		task->rIndex = i + 1;
 		printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", i, task->ID, task->C, task->T);
 	}
 	
@@ -71,10 +72,11 @@ SimPlan* ParsePlan(const char* file) {
 	plan->aTasks = (AperiodicTask*)calloc(sizeof(AperiodicTask), plan->aCount);
 	
 	// Parse the file aCount times to get the data for each periodic task
-	for(int i = 0; i < plan->pCount; ++i) {
+	for(int i = 0; i < plan->aCount; ++i) {
 		line_n = getline(&buff, &buffsize, fin);
 		AperiodicTask* task = (plan->aTasks) + i;
 		ParseTask(buff, line_n, (PeriodicTask*)task);
+		task->rIndex = plan->pCount + i + 1;
 		printf("aTasks[%i]: {ID: \"%s\", C: %i, r: %i}\n", i, task->ID, task->C, task->r);
 	}
 

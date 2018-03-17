@@ -5,12 +5,14 @@ typedef struct {
 	char* ID;
 	uint16_t C;
 	uint16_t T;
+	uint8_t rIndex;
 } PeriodicTask;
 
 typedef struct {
 	char* ID;
 	uint16_t C;
 	uint16_t r;
+	uint8_t rIndex;
 } AperiodicTask;
 
 typedef struct {
