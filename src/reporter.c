@@ -204,9 +204,9 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	Schedule* sched = (Schedule*)malloc(sizeof(Schedule));
 	sched->duration = plan->duration;
 	sched->tasks = plan->tasks;
-
+	
 	sched->activeTask = (uint8_t*)calloc(sizeof(uint8_t), sched->duration);
-
+	
 	sched->header = (char**)malloc(sizeof(char*) * sched->tasks);
 	int i = 0;
 	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
@@ -215,13 +215,25 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	for (int aTask = 0; aTask < plan->aCount; ++aTask, ++i) {
 		sched->header[i] = plan->aTasks[aTask].ID;
 	}
-
+	
 	int flag_n = sched->duration * sched->tasks;
 	sched->flags = (char*)malloc(sizeof(char) * flag_n);
 	for (int i = 0; i < flag_n; ++i) {
 		sched->flags[i] = STATUS_NONE;
 	}
-
+	
+	// Release times are independent of schedule, so generate them up-front
+	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
+		PeriodicTask& task = plan->pTasks[pTask];
+		for (int t = 0; t < sched->duration; t += task.T) {
+			sched->flags[(t * plan->tasks) + task.rIndex - 1] = STATUS_RELEASED;
+		}
+	}
+	for (int aTask = 0; aTask < plan->pCount; ++aTask, ++i) {
+		AperiodicTask& task = plan->aTasks[aTask];
+		sched->flags[(task.r * plan->tasks) + task.rIndex - 1] = STATUS_RELEASED;
+	}
+	
 	return sched;
 }
 
