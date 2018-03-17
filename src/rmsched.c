@@ -1,22 +1,7 @@
 #include "parser.h"
 #include "reporter.h"
+#include "sched.h"
 #include <stdlib.h>
-
-typedef struct {
-	PeriodicTask* periodicTask;
-
-	uint16_t R;
-	bool ran;
-	uint16_t P;
-} RunningPeriodic;
-
-typedef struct {
-	AperiodicTask* aperiodicTask;
-//
-//	uint16_t R;
-//	bool ran;
-//	uint16_t P;
-} RunningAperiodic;
 
 void sortTasks(RunningPeriodic* tasks, uint8_t pCount) {
 	//put tasks in order by priority
@@ -64,7 +49,6 @@ uint8_t checkToRun(RunningPeriodic* periodicTasks, uint8_t pCount) {
 
 Schedule* RmSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
-//	printf("%d\n", i);
 
 	//
 	RunningPeriodic* task_set = (RunningPeriodic*)calloc(sizeof(RunningPeriodic), plan->pCount);
@@ -83,9 +67,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 		running = checkToRun(task_set, plan->pCount);
 		if (running < plan->pCount) {
 
-//			sched->flags[(i * plan->tasks) + task_set[running].periodicTask->rIndex - 1] = STATUS_RELEASED;
 			sched->activeTask[i] = task_set[running].periodicTask->rIndex;
-//			reportExecution(plan, task_set[running]->rIndex);
 
 			task_set[running].R--;
 			if (task_set[running].R == 0) {
@@ -95,11 +77,9 @@ Schedule* RmSimulation(SimPlan* plan) {
 			if (previous != plan->pCount &&
 					task_set[running].periodicTask->ID != task_set[previous].periodicTask->ID &&
 					task_set[previous].R != task_set[previous].periodicTask->C) {
-//				reportPreemption(plan, task_set[running]->rIndex);
 				sched->flags[((i-1) * plan->tasks) + task_set[previous].periodicTask->rIndex - 1] = STATUS_PREEMPTED;
 			}
 		}
-//		reportFlushRow(plan);
 
 		checkReleases(task_set, plan->pCount, i, sched);
 		previous = running;
