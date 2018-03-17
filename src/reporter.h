@@ -23,3 +23,5 @@ typedef struct {
 } Schedule;
 
 void WriteSchedule(FILE* fout, Schedule* schedule);
+Schedule* MakeSchedule(SimPlan* plan);
+void CleanSchedule(Schedule* schedule);

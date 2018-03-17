@@ -15,6 +15,7 @@ typedef struct {
 
 typedef struct {
 	uint16_t duration;
+	uint8_t tasks;
 	
 	uint8_t pCount;
 	PeriodicTask* pTasks;

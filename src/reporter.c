@@ -1,3 +1,4 @@
+#include "parser.h"
 #include "reporter.h"
 #include <stdlib.h>
 #include <string.h>
@@ -133,13 +134,15 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 					++(dCount[task]);
 					break;
 				case STATUS_PREEMPTED:
-					++(dCount[task]);
+					++(pCount[task]);
 					break;
 			}
 			
 			// Compiler should simplify the arithmetic to two operations, left more for clarity
 			buff[1 + (9 * (task + 1)) + 3] = flag;
 		}
+		
+		fprintf(fout, "%s", buff);
 	}
 	
 	uint8_t dTotal = 0;
@@ -195,4 +198,35 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	free(dCount);
 	free(pCount);
 	free(buff);
+}
+
+Schedule* MakeSchedule(SimPlan* plan) {
+	Schedule* sched = (Schedule*)malloc(sizeof(Schedule));
+	sched->duration = plan->duration;
+	sched->tasks = plan->tasks;
+
+	sched->activeTask = (uint8_t*)calloc(sizeof(uint8_t), sched->duration);
+
+	sched->header = (char**)malloc(sizeof(char*) * sched->tasks);
+	int i = 0;
+	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
+		sched->header[i] = plan->pTasks[pTask].ID;
+	}
+	for (int aTask = 0; aTask < plan->aCount; ++aTask, ++i) {
+		sched->header[i] = plan->aTasks[aTask].ID;
+	}
+
+	int flag_n = sched->duration * sched->tasks;
+	sched->flags = (char*)malloc(sizeof(char) * flag_n);
+	for (int i = 0; i < flag_n; ++i) {
+		sched->flags[i] = STATUS_NONE;
+	}
+
+	return sched;
+}
+
+void CleanSchedule(Schedule* schedule) {
+	free(schedule->activeTask);
+	free(schedule->header);
+	free(schedule->flags);
 }

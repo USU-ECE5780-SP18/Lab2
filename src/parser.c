@@ -77,6 +77,9 @@ SimPlan* ParsePlan(const char* file) {
 		ParseTask(buff, line_n, (PeriodicTask*)task);
 		printf("aTasks[%i]: {ID: \"%s\", C: %i, r: %i}\n", i, task->ID, task->C, task->r);
 	}
+
+	// A total count is worth summing now rather than later
+	plan->tasks = plan->pCount + plan->aCount;
 	
 	fclose(fin);
 	return plan;
