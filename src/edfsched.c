@@ -128,8 +128,8 @@ Schedule* EdfSimulation(SimPlan* plan) {
 				// Add active to the wait list
 				if (active != NULL) {
 					active->next = wait;
-					if (wait == NULL) {
-						released->prev = active;
+					if (wait != NULL) {
+						wait->prev = active;
 					}
 
 					// Do a final check to make sure we didn't just switch to active (i.e. it's not actually being preempted)
