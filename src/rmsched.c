@@ -27,8 +27,8 @@ void checkReleases(RunningTask* periodicTasks, uint8_t pCount, int msec, Schedul
 		periodicTasks[i].P = periodicTasks[i].periodicTask->T - ((msec+1)%periodicTasks[i].periodicTask->T);
 		if (periodicTasks[i].P == periodicTasks[i].periodicTask->T) {
 			if (periodicTasks[i].R != periodicTasks[i].periodicTask->C) {
-//				reportDeadlineMissed(plan, periodicTasks[i]->rIndex);
-				sched->flags[(msec * sched->tasks) + periodicTasks[i].periodicTask->rIndex - 1] = STATUS_OVERDUE;
+//				reportDeadlineMissed(plan, periodicTasks[i]->columnIndex);
+				sched->flags[(msec * sched->tasks) + periodicTasks[i].periodicTask->taskIndex] = STATUS_OVERDUE;
 
 
 				periodicTasks[i].R = periodicTasks[i].periodicTask->C;
@@ -77,7 +77,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 		running = checkToRun(task_set, plan->pCount);
 		if (running < plan->pCount) {
 
-			sched->activeTask[i] = task_set[running].periodicTask->rIndex;
+			sched->activeTask[i] = task_set[running].periodicTask->columnIndex;
 
 			task_set[running].R--;
 			if (task_set[running].R == 0) {
@@ -87,7 +87,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 			if (previous != plan->pCount &&
 					task_set[running].periodicTask->ID != task_set[previous].periodicTask->ID &&
 					task_set[previous].R != task_set[previous].periodicTask->C) {
-				sched->flags[((i-1) * plan->tasks) + task_set[previous].periodicTask->rIndex - 1] = STATUS_PREEMPTED;
+				sched->flags[((i-1) * plan->tasks) + task_set[previous].periodicTask->taskIndex] = STATUS_PREEMPTED;
 			}
 		}
 

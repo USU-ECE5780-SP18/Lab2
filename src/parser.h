@@ -2,17 +2,19 @@
 #include <stdint.h>
 
 typedef struct {
+	uint8_t taskIndex;
+	uint8_t columnIndex;
 	char* ID;
 	uint16_t C;
 	uint16_t T;
-	uint8_t rIndex;
 } PeriodicTask;
 
 typedef struct {
+	uint8_t taskIndex;
+	uint8_t columnIndex;
 	char* ID;
 	uint16_t C;
 	uint16_t r;
-	uint8_t rIndex;
 } AperiodicTask;
 
 typedef struct {

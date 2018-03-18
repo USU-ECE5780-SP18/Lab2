@@ -226,12 +226,12 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
 		PeriodicTask& task = plan->pTasks[pTask];
 		for (int t = 0; t < sched->duration; t += task.T) {
-			sched->flags[(t * plan->tasks) + task.rIndex - 1] = STATUS_RELEASED;
+			sched->flags[(t * plan->tasks) + task.taskIndex] = STATUS_RELEASED;
 		}
 	}
 	for (int aTask = 0; aTask < plan->pCount; ++aTask, ++i) {
 		AperiodicTask& task = plan->aTasks[aTask];
-		sched->flags[(task.r * plan->tasks) + task.rIndex - 1] = STATUS_RELEASED;
+		sched->flags[(task.r * plan->tasks) + task.taskIndex] = STATUS_RELEASED;
 	}
 	
 	return sched;
