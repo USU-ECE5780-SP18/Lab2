@@ -6,7 +6,7 @@
 void sortTasks(RunningTask* tasks, uint8_t pCount) {
 	//put tasks in order by priority
 	for (int i = 0; i < pCount; i++) {
-		for (int j = i+1; j < pCount; j++) {
+		for (int j = i + 1; j < pCount; j++) {
 			if (tasks[j].periodicTask->T < tasks[i].periodicTask->T) {
 				RunningTask temp = tasks[i];
 				tasks[i] = tasks[j];
