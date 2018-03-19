@@ -63,32 +63,36 @@ Schedule* RmSimulation(SimPlan* plan) {
     sortTasks(task_set, plan->pCount);
     for (int i = 0; i < plan->pCount; i++) {
 
-        uint8_t running;
-        uint8_t previous = 0;
+        uint16_t runtime;
+        uint16_t release = 0;
 
-        int deadline;
-        for (int j = 0; j < plan->duration; j++) {
+		bool hardDeadline = true;
+        int deadline = 0;
+//        for (int deadline = task_set[i].periodicTask->T; deadline < plan->duration;
+//			 deadline += task_set[i].periodicTask->T) {
             //find deadline, iterate through
-//            task_set[i].P = task_set[i].periodicTask->T - ((msec+1)%task_set[i].periodicTask->T);
-            deadline = task_set[i].periodicTask->T + j;
-            if (deadline > plan->duration) deadline = plan->duration;
-            printf("here %d\n", deadline);
-            j = task_set[i].R;
-            for (int k = deadline - 1; j > 0; k--){
-                if (sched->activeTask[k] == 0){
-                    sched->activeTask[k] = task_set[i].periodicTask->columnIndex;
-                    j--;
-                } else {
-//                    k++;
-                }
-                if (previous == k) {
-                    sched->flags[(k * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
+		while(deadline < plan->duration){
+			deadline += task_set[i].periodicTask->T;
+			if (deadline > plan->duration){
+				deadline = plan->duration;
+				hardDeadline = false;
+			}
+			runtime = task_set[i].periodicTask->C;
+            for (int time = deadline - 1; runtime > 0; time--){
+                if (sched->activeTask[time] == 0) {
+					sched->activeTask[time] = task_set[i].periodicTask->columnIndex;
+					runtime--;
+				}
+                if (release == time) {
+					if (hardDeadline){
+						sched->flags[((deadline-1) * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
+					}
+					printf("missed a deadline at %d\n", time);
                     break;
                 }
             }
-            j = deadline - 1;
-            previous = j;
-
+            release = deadline;
+			printf("release %d\n", release);
         }
 //        for (int i = 0; i < plan->duration; i++) {
 //            running = checkToRun(task_set, plan->pCount);
