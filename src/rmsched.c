@@ -22,37 +22,9 @@ void sortTasks(RunningTask* tasks, uint8_t pCount) {
 	}
 }
 
-void checkReleases(RunningTask* task_set, uint8_t pCount, int msec, Schedule* sched) {
-	for (int i = 0; i < pCount; i++) {
-		task_set[i].P = task_set[i].periodicTask->T - ((msec+1)%task_set[i].periodicTask->T);
-		if (task_set[i].P == task_set[i].periodicTask->T) {
-			if (task_set[i].R != task_set[i].periodicTask->C) {
-//				reportDeadlineMissed(plan, task_set[i]->columnIndex);
-				sched->flags[(msec * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
-
-
-				task_set[i].R = task_set[i].periodicTask->C;
-			}
-			task_set[i].ran = false;
-		}
-	}
-}
-
-uint8_t checkToRun(RunningTask* periodicTasks, uint8_t pCount) {
-	for (int i = 0; i < pCount; i++) {
-		if (!periodicTasks[i].ran) {
-			return i;
-		}
-	}
-	return pCount;
-}
-
 Schedule* RmSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
-
-	//
 	RunningTask* task_set = (RunningTask*)calloc(sizeof(RunningTask), plan->pCount);
-//	RunningAperiodic* task_set = (RunningAperiodic*)calloc(sizeof(RunningAperiodic), plan->aCount);
     for (int i = 0; i < plan->pCount; i++) {
         //bool to help prioritize
         task_set[i].ran = false;
@@ -68,9 +40,6 @@ Schedule* RmSimulation(SimPlan* plan) {
 
 		bool hardDeadline = true;
         int deadline = 0;
-//        for (int deadline = task_set[i].periodicTask->T; deadline < plan->duration;
-//			 deadline += task_set[i].periodicTask->T) {
-            //find deadline, iterate through
 		while(deadline < plan->duration){
 			deadline += task_set[i].periodicTask->T;
 			if (deadline > plan->duration){
@@ -106,29 +75,8 @@ Schedule* RmSimulation(SimPlan* plan) {
             release = deadline;
 			printf("release %d\n", release);
         }
-//        for (int i = 0; i < plan->duration; i++) {
-//            running = checkToRun(task_set, plan->pCount);
-//            if (running < plan->pCount) {
-//
-//
-//                task_set[running].R--;
-//                if (task_set[running].R == 0) {
-//                    task_set[running].ran = true;
-//                    task_set[running].R = task_set[running].periodicTask->C;
-//                }
-//                if (previous != plan->pCount &&
-//                    task_set[running].periodicTask->ID != task_set[previous].periodicTask->ID &&
-//                    task_set[previous].R != task_set[previous].periodicTask->C) {
-//                    sched->flags[((i - 1) * plan->tasks) + task_set[previous].periodicTask->columnIndex -
-//                                 1] = STATUS_PREEMPTED;
-//                }
-//            }
-//
-//            checkReleases(task_set, plan->pCount, i, sched);
-//            previous = running;
-//        }
     }
+
 	free(task_set);
-	//
 	return sched;
 }
