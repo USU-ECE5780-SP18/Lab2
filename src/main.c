@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 	// Output the results
 	FILE* fout = fopen(fileout, "w");
 	
-	fprintf(fout, "------------------ Rate Monotonic -----------------\r\n");
+	fprintf(fout, "--------------- ALAP Rate Monotonic ---------------\r\n");
 	WriteSchedule(fout, rmsched);
 	fprintf(fout, "\r\n");
 	
