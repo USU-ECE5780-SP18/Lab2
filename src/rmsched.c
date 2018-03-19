@@ -63,7 +63,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 				} else {
 					preempted = true;
 				}
-                if (release == time) {
+                if (release == time && runtime != 0) {
 					if (hardDeadline){
 						sched->flags[((fake_preemption) * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_PREEMPTED;
 						sched->flags[((deadline-1) * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
