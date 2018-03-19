@@ -78,5 +78,46 @@ Schedule* RmSimulation(SimPlan* plan) {
     }
 
 	free(task_set);
+	task_set = (RunningTask*)calloc(sizeof(RunningTask), plan->aCount);
+	for (int i = 0; i < plan->aCount; i++) {
+		//bool to help prioritize
+		task_set[i].ran = false;
+		task_set[i].aperiodicTask = plan->aTasks + i;
+		//the task runtime
+		task_set[i].R = task_set[i].aperiodicTask->C;
+		//to reuse sortTasks
+		task_set[i].periodicTask = (PeriodicTask*)task_set[i].aperiodicTask;
+	}
+
+	sortTasks(task_set, plan->aCount);
+	int time = task_set[0].aperiodicTask->r;
+	int aTasks = 0;
+	int running = task_set[0].aperiodicTask->C;
+	bool preemption = false;
+
+	while (time < plan->duration && aTasks < plan->aCount){
+		if (sched->activeTask[time] == 0) {
+			preemption = true;
+			sched->activeTask[time] = task_set[aTasks].periodicTask->columnIndex;
+			running--;
+			if (running == 0) {
+				aTasks++;
+				preemption = false;
+				running = task_set[aTasks].aperiodicTask->C;
+				if (task_set[aTasks].aperiodicTask->r > time) {
+					time = task_set[aTasks].aperiodicTask->r;
+					continue;
+				}
+			}
+		} else if (preemption){
+			sched->flags[((time-1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_PREEMPTED;
+			preemption = false;
+		}
+		time++;
+
+//		if (completed) aTasks++;
+	}
+
+	free(task_set);
 	return sched;
 }
