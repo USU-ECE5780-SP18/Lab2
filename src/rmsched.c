@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
-	//put tasks in order by priority
 	for (int i = 0; i < pCount; i++) {
 		for (int j = i + 1; j < pCount; j++) {
 			if (tasks[j]->T < tasks[i]->T) {

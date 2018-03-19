@@ -3,8 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Outputs a number to the given column in the table
-// Has a 4 digit limit on numbers it can print to the column
+//---------------------------------------------------------------------------------------------------------------------+
+// Outputs a number to the given column in the table (0 - 9999)                                                        |
+//---------------------------------------------------------------------------------------------------------------------+
 inline void colCounter(char* col, uint16_t n) {
 	// Two spaces before the number
 	col[0] = col[1] = ' ';
@@ -20,6 +21,9 @@ inline void colCounter(char* col, uint16_t n) {
 	col[6] = col[7] = ' ';
 }
 
+//---------------------------------------------------------------------------------------------------------------------+
+// Generates the output table in the given file for a fully generated schedule                                         |
+//---------------------------------------------------------------------------------------------------------------------+
 void WriteSchedule(FILE* fout, Schedule* schedule) {
 	uint16_t& duration = schedule->duration;
 	uint8_t& tasks = schedule->tasks;
@@ -200,6 +204,10 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	free(buff);
 }
 
+//---------------------------------------------------------------------------------------------------------------------+
+// Dynamically allocates (must call CleanSchedule) space for a schedule with the right dimensions and a clean state    |
+// Also pre-fills the schedule with the released flag since it's convienient and independent of the type of schedule   |
+//---------------------------------------------------------------------------------------------------------------------+
 Schedule* MakeSchedule(SimPlan* plan) {
 	Schedule* sched = (Schedule*)malloc(sizeof(Schedule));
 	sched->duration = plan->duration;
@@ -237,6 +245,9 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	return sched;
 }
 
+//---------------------------------------------------------------------------------------------------------------------+
+// Appropriately frees the memory associated with the given schedule                                                   |
+//---------------------------------------------------------------------------------------------------------------------+
 void CleanSchedule(Schedule* schedule) {
 	free(schedule->activeTask);
 	free(schedule->header);

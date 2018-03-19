@@ -32,6 +32,9 @@ inline void ParseTask(char* buff, size_t line_n, PeriodicTask* task) {
 	task->T = atoi(buff + bos); // same memory location and size for (AperiodicTask*)->r
 }
 
+//---------------------------------------------------------------------------------------------------------------------+
+// Returns a SimPlan struct with the relevant task settings based on data parsed from the given input file             |
+//---------------------------------------------------------------------------------------------------------------------+
 SimPlan* ParsePlan(const char* file) {
 	SimPlan* plan = (SimPlan*)calloc(sizeof(SimPlan), 1);
 	FILE* fin = fopen(file, "r");

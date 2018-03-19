@@ -17,7 +17,7 @@ typedef struct ListNode {
 	ListNode* prev;
 } ListNode;
 
-void CleanNode(ListNode* node) {
+inline void CleanNode(ListNode* node) {
 	free(node->value);
 	free(node);
 }
