@@ -22,18 +22,18 @@ void sortTasks(RunningTask* tasks, uint8_t pCount) {
 	}
 }
 
-void checkReleases(RunningTask* periodicTasks, uint8_t pCount, int msec, Schedule* sched) {
+void checkReleases(RunningTask* task_set, uint8_t pCount, int msec, Schedule* sched) {
 	for (int i = 0; i < pCount; i++) {
-		periodicTasks[i].P = periodicTasks[i].periodicTask->T - ((msec+1)%periodicTasks[i].periodicTask->T);
-		if (periodicTasks[i].P == periodicTasks[i].periodicTask->T) {
-			if (periodicTasks[i].R != periodicTasks[i].periodicTask->C) {
-//				reportDeadlineMissed(plan, periodicTasks[i]->columnIndex);
-				sched->flags[(msec * sched->tasks) + periodicTasks[i].periodicTask->taskIndex] = STATUS_OVERDUE;
+		task_set[i].P = task_set[i].periodicTask->T - ((msec+1)%task_set[i].periodicTask->T);
+		if (task_set[i].P == task_set[i].periodicTask->T) {
+			if (task_set[i].R != task_set[i].periodicTask->C) {
+//				reportDeadlineMissed(plan, task_set[i]->columnIndex);
+				sched->flags[(msec * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
 
 
-				periodicTasks[i].R = periodicTasks[i].periodicTask->C;
+				task_set[i].R = task_set[i].periodicTask->C;
 			}
-			periodicTasks[i].ran = false;
+			task_set[i].ran = false;
 		}
 	}
 }
@@ -69,7 +69,7 @@ Schedule* RmSimulation(SimPlan* plan) {
         int deadline;
         for (int j = 0; j < plan->duration; j++) {
             //find deadline, iterate through
-//            periodicTasks[i].P = periodicTasks[i].periodicTask->T - ((msec+1)%periodicTasks[i].periodicTask->T);
+//            task_set[i].P = task_set[i].periodicTask->T - ((msec+1)%task_set[i].periodicTask->T);
             deadline = task_set[i].periodicTask->T + j;
             if (deadline > plan->duration) deadline = plan->duration;
             printf("here %d\n", deadline);
@@ -82,7 +82,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 //                    k++;
                 }
                 if (previous == k) {
-                    sched->flags[(k * sched->tasks) + periodicTasks[i].periodicTask->taskIndex] = STATUS_OVERDUE;
+                    sched->flags[(k * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
                     break;
                 }
             }
