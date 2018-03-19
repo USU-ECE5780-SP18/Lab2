@@ -237,7 +237,7 @@ Schedule* MakeSchedule(SimPlan* plan) {
 			sched->flags[(t * plan->tasks) + task.taskIndex] = STATUS_RELEASED;
 		}
 	}
-	for (int aTask = 0; aTask < plan->pCount; ++aTask, ++i) {
+	for (int aTask = 0; aTask < plan->aCount; ++aTask, ++i) {
 		AperiodicTask& task = plan->aTasks[aTask];
 		sched->flags[(task.r * plan->tasks) + task.taskIndex] = STATUS_RELEASED;
 	}
