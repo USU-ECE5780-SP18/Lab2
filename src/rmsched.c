@@ -96,7 +96,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 	bool preemption = false;
 	int deadline = time + 500;
 
-	while (time < plan->duration && aTasks < plan->aCount){
+	while (time < plan->duration && aTasks < plan->aCount) {
 		if (sched->activeTask[time] == 0) {
 			preemption = true;
 			sched->activeTask[time] = task_set[aTasks].periodicTask->columnIndex;
@@ -111,13 +111,13 @@ Schedule* RmSimulation(SimPlan* plan) {
 					continue;
 				}
 			}
-		} else if (preemption){
-			sched->flags[((time-1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_PREEMPTED;
+		} else if (preemption) {
+			sched->flags[((time - 1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_PREEMPTED;
 			preemption = false;
 		}
 		time++;
-		while (deadline == time){
-			sched->flags[((time-1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_OVERDUE;
+		while (deadline == time) {
+			sched->flags[((time - 1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_OVERDUE;
 			aTasks++;
 			preemption = false;
 			running = task_set[aTasks].aperiodicTask->C;
@@ -126,8 +126,6 @@ Schedule* RmSimulation(SimPlan* plan) {
 				time = task_set[aTasks].aperiodicTask->r;
 			}
 		}
-
-//		if (completed) aTasks++;
 	}
 
 	free(task_set);
