@@ -1,6 +1,5 @@
 #include "parser.h"
 #include "reporter.h"
-#include "sched.h"
 #include <stdlib.h>
 
 typedef struct {

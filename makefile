@@ -1,23 +1,26 @@
 lab2: bin/main.o bin/reporter.o bin/parser.o bin/rmsched.o bin/edfsched.o
+	mkdir -p bin
 	g++ bin/main.o bin/reporter.o bin/parser.o bin/rmsched.o bin/edfsched.o -g -O0 -o lab2
 
-bin/main.o: bin src/main.c src/parser.h src/reporter.h
+bin/main.o: src/main.c src/parser.h src/reporter.h
+	mkdir -p bin
 	g++ src/main.c -lpthread -g -O0 -c -o bin/main.o
 
-bin/parser.o: bin src/parser.c src/parser.h
+bin/parser.o: src/parser.c src/parser.h
+	mkdir -p bin
 	g++ src/parser.c -lpthread -g -O0 -c -o bin/parser.o
 
-bin/reporter.o: bin src/reporter.c src/reporter.h
+bin/reporter.o: src/reporter.c src/reporter.h
+	mkdir -p bin
 	g++ src/reporter.c -lpthread -g -O0 -c -o bin/reporter.o
 
-bin/rmsched.o: bin src/rmsched.c src/parser.h src/reporter.h src/sched.h
+bin/rmsched.o: src/rmsched.c src/parser.h src/reporter.h
+	mkdir -p bin
 	g++ src/rmsched.c -lpthread -g -O0 -c -o bin/rmsched.o
 
-bin/edfsched.o: bin src/edfsched.c src/parser.h src/reporter.h src/sched.h
-	g++ src/edfsched.c -lpthread -g -O0 -c -o bin/edfsched.o
-
-bin:
+bin/edfsched.o: src/edfsched.c src/parser.h src/reporter.h
 	mkdir -p bin
+	g++ src/edfsched.c -lpthread -g -O0 -c -o bin/edfsched.o
 
 clean:
 	rm bin/*.o

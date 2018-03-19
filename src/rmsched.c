@@ -1,19 +1,18 @@
 #include "parser.h"
 #include "reporter.h"
-#include "sched.h"
 #include <stdlib.h>
 
-void sortTasks(RunningTask* tasks, uint8_t pCount) {
+void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
 	//put tasks in order by priority
 	for (int i = 0; i < pCount; i++) {
 		for (int j = i + 1; j < pCount; j++) {
-			if (tasks[j].periodicTask->T < tasks[i].periodicTask->T) {
-				RunningTask temp = tasks[i];
+			if (tasks[j]->T < tasks[i]->T) {
+				PeriodicTask* temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
-			} else if (tasks[j].periodicTask->T == tasks[i].periodicTask->T) {
-				if (tasks[j].periodicTask->C > tasks[i].periodicTask->C) {
-					RunningTask temp = tasks[i];
+			} else if (tasks[j]->T == tasks[i]->T) {
+				if (tasks[j]->C > tasks[i]->C) {
+					PeriodicTask* temp = tasks[i];
 					tasks[i] = tasks[j];
 					tasks[j] = temp;
 				}
@@ -25,13 +24,11 @@ void sortTasks(RunningTask* tasks, uint8_t pCount) {
 Schedule* RmSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
 
-	RunningTask* task_set = (RunningTask*)calloc(sizeof(RunningTask), plan->pCount);
+	PeriodicTask** pTasks = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
 	for (int i = 0; i < plan->pCount; i++) {
-		task_set[i].periodicTask = plan->pTasks + i;
-		//the task runtime
-		task_set[i].R = task_set[i].periodicTask->C;
+		pTasks[i] = plan->pTasks + i;
 	}
-	sortTasks(task_set, plan->pCount);
+	sortTasks(pTasks, plan->pCount);
 
 	// Generate the schedule ALAP in order of the highest priority periodic tasks
 	for (int i = 0; i < plan->pCount; i++) {
@@ -41,12 +38,12 @@ Schedule* RmSimulation(SimPlan* plan) {
 		bool hardDeadline = true;
 		int deadline = 0;
 		while (deadline < plan->duration) {
-			deadline += task_set[i].periodicTask->T;
+			deadline += pTasks[i]->T;
 			if (deadline > plan->duration) {
 				deadline = plan->duration;
 				hardDeadline = false;
 			}
-			runtime = task_set[i].periodicTask->C;
+			runtime = pTasks[i]->C;
 			bool preempted = false;
 			int fake_preemption = 0;
 			for (int time = deadline - 1; runtime > 0; time--) {
@@ -54,19 +51,19 @@ Schedule* RmSimulation(SimPlan* plan) {
 					if (fake_preemption == 0) {
 						fake_preemption = time;
 					}
-					if (runtime != task_set[i].periodicTask->C && preempted) {
-						sched->flags[((time)* sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_PREEMPTED;
+					if (runtime != pTasks[i]->C && preempted) {
+						sched->flags[((time)* sched->tasks) + pTasks[i]->taskIndex] = STATUS_PREEMPTED;
 					}
 					preempted = false;
-					sched->activeTask[time] = task_set[i].periodicTask->columnIndex;
+					sched->activeTask[time] = pTasks[i]->columnIndex;
 					runtime--;
 				} else {
 					preempted = true;
 				}
 				if (release == time && runtime != 0) {
 					if (hardDeadline) {
-						sched->flags[((fake_preemption)* sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_PREEMPTED;
-						sched->flags[((deadline - 1) * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
+						sched->flags[((fake_preemption)* sched->tasks) + pTasks[i]->taskIndex] = STATUS_PREEMPTED;
+						sched->flags[((deadline - 1) * sched->tasks) + pTasks[i]->taskIndex] = STATUS_OVERDUE;
 					}
 					printf("missed a deadline at %d\n", time);
 					break;
@@ -76,58 +73,52 @@ Schedule* RmSimulation(SimPlan* plan) {
 			printf("release %d\n", release);
 		}
 	}
+	free(pTasks);
 
-	free(task_set);
-	task_set = (RunningTask*)calloc(sizeof(RunningTask), plan->aCount);
+	AperiodicTask** aTasks = (AperiodicTask**)calloc(sizeof(AperiodicTask*), plan->aCount);
 	for (int i = 0; i < plan->aCount; i++) {
-		//bool to help prioritize
-		task_set[i].ran = false;
-		task_set[i].aperiodicTask = plan->aTasks + i;
-		//the task runtime
-		task_set[i].R = task_set[i].aperiodicTask->C;
-		//to reuse sortTasks
-		task_set[i].periodicTask = (PeriodicTask*)task_set[i].aperiodicTask;
+		aTasks[i] = plan->aTasks + i;
 	}
 
-	sortTasks(task_set, plan->aCount);
-	int time = task_set[0].aperiodicTask->r;
-	int aTasks = 0;
-	int running = task_set[0].aperiodicTask->C;
+	sortTasks((PeriodicTask**)aTasks, plan->aCount);
+	int time = aTasks[0]->r;
+	int task = 0;
+	int running = aTasks[0]->C;
 	bool preemption = false;
 	int deadline = time + 500;
 
-	while (time < plan->duration && aTasks < plan->aCount) {
+	while (time < plan->duration && task < plan->aCount) {
 		if (sched->activeTask[time] == 0) {
 			preemption = true;
-			sched->activeTask[time] = task_set[aTasks].periodicTask->columnIndex;
+			sched->activeTask[time] = aTasks[task]->columnIndex;
 			running--;
 			if (running == 0) {
 				aTasks++;
 				preemption = false;
-				running = task_set[aTasks].aperiodicTask->C;
-				deadline = task_set[aTasks].aperiodicTask->r + 500;
-				if (task_set[aTasks].aperiodicTask->r > time) {
-					time = task_set[aTasks].aperiodicTask->r;
+				running = aTasks[task]->C;
+				deadline = aTasks[task]->r + 500;
+				if (aTasks[task]->r > time) {
+					time = aTasks[task]->r;
 					continue;
 				}
 			}
 		} else if (preemption) {
-			sched->flags[((time - 1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_PREEMPTED;
+			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_PREEMPTED;
 			preemption = false;
 		}
 		time++;
 		while (deadline == time) {
-			sched->flags[((time - 1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_OVERDUE;
+			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_OVERDUE;
 			aTasks++;
 			preemption = false;
-			running = task_set[aTasks].aperiodicTask->C;
-			deadline = task_set[aTasks].aperiodicTask->r + 500;
-			if (task_set[aTasks].aperiodicTask->r > time) {
-				time = task_set[aTasks].aperiodicTask->r;
+			running = aTasks[task]->C;
+			deadline = aTasks[task]->r + 500;
+			if (aTasks[task]->r > time) {
+				time = aTasks[task]->r;
 			}
 		}
 	}
 
-	free(task_set);
+	free(aTasks);
 	return sched;
 }
