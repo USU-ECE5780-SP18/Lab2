@@ -3,17 +3,17 @@
 #include "sched.h"
 #include <stdlib.h>
 
-void sortTasks(RunningPeriodic* tasks, uint8_t pCount) {
+void sortTasks(RunningTask* tasks, uint8_t pCount) {
 	//put tasks in order by priority
 	for (int i = 0; i < pCount; i++) {
 		for (int j = i+1; j < pCount; j++) {
 			if (tasks[j].periodicTask->T < tasks[i].periodicTask->T) {
-				RunningPeriodic temp = tasks[i];
+				RunningTask temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
 			} else if (tasks[j].periodicTask->T == tasks[i].periodicTask->T) {
 				if (tasks[j].periodicTask->C > tasks[i].periodicTask->C) {
-					RunningPeriodic temp = tasks[i];
+					RunningTask temp = tasks[i];
 					tasks[i] = tasks[j];
 					tasks[j] = temp;
 				}
@@ -22,13 +22,13 @@ void sortTasks(RunningPeriodic* tasks, uint8_t pCount) {
 	}
 }
 
-void checkReleases(RunningPeriodic* periodicTasks, uint8_t pCount, int msec, Schedule* sched) {
+void checkReleases(RunningTask* periodicTasks, uint8_t pCount, int msec, Schedule* sched) {
 	for (int i = 0; i < pCount; i++) {
 		periodicTasks[i].P = periodicTasks[i].periodicTask->T - ((msec+1)%periodicTasks[i].periodicTask->T);
 		if (periodicTasks[i].P == periodicTasks[i].periodicTask->T) {
 			if (periodicTasks[i].R != periodicTasks[i].periodicTask->C) {
-//				reportDeadlineMissed(plan, periodicTasks[i]->rIndex);
-				sched->flags[(msec * sched->tasks) + periodicTasks[i].periodicTask->rIndex - 1] = STATUS_OVERDUE;
+//				reportDeadlineMissed(plan, periodicTasks[i]->columnIndex);
+				sched->flags[(msec * sched->tasks) + periodicTasks[i].periodicTask->taskIndex] = STATUS_OVERDUE;
 
 
 				periodicTasks[i].R = periodicTasks[i].periodicTask->C;
@@ -38,7 +38,7 @@ void checkReleases(RunningPeriodic* periodicTasks, uint8_t pCount, int msec, Sch
 	}
 }
 
-uint8_t checkToRun(RunningPeriodic* periodicTasks, uint8_t pCount) {
+uint8_t checkToRun(RunningTask* periodicTasks, uint8_t pCount) {
 	for (int i = 0; i < pCount; i++) {
 		if (!periodicTasks[i].ran) {
 			return i;
@@ -51,7 +51,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
 
 	//
-	RunningPeriodic* task_set = (RunningPeriodic*)calloc(sizeof(RunningPeriodic), plan->pCount);
+	RunningTask* task_set = (RunningTask*)calloc(sizeof(RunningTask), plan->pCount);
 //	RunningAperiodic* task_set = (RunningAperiodic*)calloc(sizeof(RunningAperiodic), plan->aCount);
     for (int i = 0; i < plan->pCount; i++) {
         //bool to help prioritize
@@ -76,13 +76,13 @@ Schedule* RmSimulation(SimPlan* plan) {
             j = task_set[i].R;
             for (int k = deadline - 1; j > 0; k--){
                 if (sched->activeTask[k] == 0){
-                    sched->activeTask[k] = task_set[i].periodicTask->rIndex;
+                    sched->activeTask[k] = task_set[i].periodicTask->columnIndex;
                     j--;
                 } else {
 //                    k++;
                 }
                 if (previous == k) {
-                    sched->flags[(k * sched->tasks) + periodicTasks[i].periodicTask->rIndex - 1] = STATUS_OVERDUE;
+                    sched->flags[(k * sched->tasks) + periodicTasks[i].periodicTask->taskIndex] = STATUS_OVERDUE;
                     break;
                 }
             }
@@ -103,7 +103,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 //                if (previous != plan->pCount &&
 //                    task_set[running].periodicTask->ID != task_set[previous].periodicTask->ID &&
 //                    task_set[previous].R != task_set[previous].periodicTask->C) {
-//                    sched->flags[((i - 1) * plan->tasks) + task_set[previous].periodicTask->rIndex -
+//                    sched->flags[((i - 1) * plan->tasks) + task_set[previous].periodicTask->columnIndex -
 //                                 1] = STATUS_PREEMPTED;
 //                }
 //            }

@@ -3,20 +3,13 @@
 
 typedef struct {
     PeriodicTask* periodicTask;
+    AperiodicTask* aperiodicTask;
 
     uint16_t R;
     bool ran;
+    bool isPeriodic;
     uint16_t P;
-} RunningPeriodic;
+} RunningTask;
 
-typedef struct {
-    AperiodicTask* aperiodicTask;
-//
-//	uint16_t R;
-//	bool ran;
-//	uint16_t P;
-} RunningAperiodic;
-
-extern void checkReleases(RunningPeriodic* periodicTasks, uint8_t pCount, int msec, Schedule* sched);
-extern void sortTasks(RunningPeriodic* tasks, uint8_t pCount);
-extern uint8_t checkToRun(RunningPeriodic* periodicTasks, uint8_t pCount);
+extern void checkReleases(RunningTask* periodicTasks, uint8_t pCount, int msec, Schedule* sched);
+extern uint8_t checkToRun(RunningTask* tasks, uint8_t total);
