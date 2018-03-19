@@ -78,13 +78,25 @@ Schedule* RmSimulation(SimPlan* plan) {
 				hardDeadline = false;
 			}
 			runtime = task_set[i].periodicTask->C;
+			bool preempted = false;
+			int fake_preemption = 0;
             for (int time = deadline - 1; runtime > 0; time--){
                 if (sched->activeTask[time] == 0) {
+					if (fake_preemption == 0){
+						fake_preemption = time;
+					}
+					if (runtime != task_set[i].periodicTask->C && preempted){
+						sched->flags[((time) * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_PREEMPTED;
+					}
+					preempted = false;
 					sched->activeTask[time] = task_set[i].periodicTask->columnIndex;
 					runtime--;
+				} else {
+					preempted = true;
 				}
                 if (release == time) {
 					if (hardDeadline){
+						sched->flags[((fake_preemption) * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_PREEMPTED;
 						sched->flags[((deadline-1) * sched->tasks) + task_set[i].periodicTask->taskIndex] = STATUS_OVERDUE;
 					}
 					printf("missed a deadline at %d\n", time);
