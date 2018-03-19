@@ -94,6 +94,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 	int aTasks = 0;
 	int running = task_set[0].aperiodicTask->C;
 	bool preemption = false;
+	int deadline = time + 500;
 
 	while (time < plan->duration && aTasks < plan->aCount){
 		if (sched->activeTask[time] == 0) {
@@ -104,6 +105,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 				aTasks++;
 				preemption = false;
 				running = task_set[aTasks].aperiodicTask->C;
+				deadline = task_set[aTasks].aperiodicTask->r + 500;
 				if (task_set[aTasks].aperiodicTask->r > time) {
 					time = task_set[aTasks].aperiodicTask->r;
 					continue;
@@ -114,6 +116,16 @@ Schedule* RmSimulation(SimPlan* plan) {
 			preemption = false;
 		}
 		time++;
+		while (deadline == time){
+			sched->flags[((time-1) * sched->tasks) + task_set[aTasks].periodicTask->taskIndex] = STATUS_OVERDUE;
+			aTasks++;
+			preemption = false;
+			running = task_set[aTasks].aperiodicTask->C;
+			deadline = task_set[aTasks].aperiodicTask->r + 500;
+			if (task_set[aTasks].aperiodicTask->r > time) {
+				time = task_set[aTasks].aperiodicTask->r;
+			}
+		}
 
 //		if (completed) aTasks++;
 	}
