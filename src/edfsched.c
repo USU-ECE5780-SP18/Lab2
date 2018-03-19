@@ -6,7 +6,6 @@ typedef struct {
 	PeriodicTask* genericTask;
 	PeriodicTask* periodicTask;
 	AperiodicTask* aperiodicTask;
-	bool isPeriodic;
 
 	uint16_t R;
 	uint16_t d;
@@ -38,7 +37,6 @@ Schedule* EdfSimulation(SimPlan* plan) {
 			job->genericTask = task;
 			job->periodicTask = task;
 			job->aperiodicTask = NULL;
-			job->isPeriodic = true;
 			job->R = task->C;
 
 			// Insert into the release schedule
@@ -65,7 +63,6 @@ Schedule* EdfSimulation(SimPlan* plan) {
 		job->genericTask = (PeriodicTask*)task;
 		job->periodicTask = NULL;
 		job->aperiodicTask = task;
-		job->isPeriodic = false;
 		job->R = task->C;
 		job->d = (task->r + 500);
 
