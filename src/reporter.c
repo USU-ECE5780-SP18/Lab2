@@ -213,7 +213,8 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	sched->activeTask = (uint8_t*)calloc(sizeof(uint8_t), sched->duration);
 
 	// Create average response-time table (calloc initializes to 0 for convenience when dealing with sums)
-	sched->avgResponse = (uint16_t*)calloc(sizeof(uint16_t), sched->tasks);
+	sched->responseTimes = (uint16_t*)calloc(sizeof(uint16_t), sched->tasks);
+	sched->responseCount = (uint16_t*)calloc(sizeof(uint8_t), sched->tasks);
 
 	// Auto-fill the headers based on the task ID's in the given plan
 	sched->header = (char**)malloc(sizeof(char*) * sched->tasks);
@@ -255,4 +256,6 @@ void CleanSchedule(Schedule* schedule) {
 	free(schedule->activeTask);
 	free(schedule->header);
 	free(schedule->flags);
+	free(schedule->responseTimes);
+	free(schedule->responseCount);
 }
