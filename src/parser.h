@@ -1,6 +1,9 @@
 #pragma once
 #include <stdint.h>
 
+// Per the assignment description, aperiodic tasks have an implicit deadline of 500ms from the release time
+#define APERIODIC_DEADLINE 500
+
 typedef struct {
 	uint8_t taskIndex;
 	uint8_t columnIndex;

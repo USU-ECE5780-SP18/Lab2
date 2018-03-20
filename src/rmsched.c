@@ -121,41 +121,68 @@ Schedule* RmSimulation(SimPlan* plan) {
 	}
 	sortTasks((PeriodicTask**)aTasks, plan->aCount);
 
+	// Proc the first aperiodic task
 	task = 0;
-	time = aTasks[task]->r;
-	runtime = aTasks[task]->C;
 	preemptFlag = false;
-	deadline = time + 500;
+	runtime = aTasks[task]->C;
+	release = aTasks[task]->r;
+	deadline = release + APERIODIC_DEADLINE;
 
+	// No need to loop over time before the first aperiodic tasks is released
+	time = release;
+
+	// Aperiodic tasks don't switch as often as periodic tasks: aTasks[i + 1] does not execute until aTasks[i] is done
+	// Exploit this fact to loop over time and aTasks in the same loop
 	while (time < plan->duration && task < plan->aCount) {
+
+		// Only schedule where there is slack
 		if (sched->activeTask[time] == 0) {
-			preemptFlag = true;
 			sched->activeTask[time] = aTasks[task]->columnIndex;
 			runtime--;
+
+			// Signal to the next cycle that we ran this cycle
+			preemptFlag = true;
+
 			if (runtime == 0) {
-				task++;
+				// Proc the next aperiodic task that (was/will be) released
+				if (++task >= plan->aCount) { break; }
 				preemptFlag = false;
 				runtime = aTasks[task]->C;
-				deadline = aTasks[task]->r + 500;
-				if (aTasks[task]->r > time) {
-					time = aTasks[task]->r;
+				release = aTasks[task]->r;
+				deadline = release + APERIODIC_DEADLINE;
+
+				// No need to loop over time where no uncompleted aperiodic tasks are released
+				if (release > time) {
+					time = release;
 					continue;
 				}
 			}
 		}
+
+		// If there is not slack in this cycle, and we ran the last cycle, we were preempted in that cycle
 		else if (preemptFlag) {
 			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_PREEMPTED;
 			preemptFlag = false;
 		}
+
+		// The iterator through time which we avoid using as much as possible
 		time++;
+
+		// Loop in order to handle multiple aperiodic tasks having the same deadline
 		while (deadline == time) {
+			// Our standard (because of periodic tasks) is to mark the missed deadline at deadline - 1
 			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_OVERDUE;
+			
+			// Proc the next aperiodic task that (was/will be) released
 			if (++task >= plan->aCount) { break; }
 			preemptFlag = false;
 			runtime = aTasks[task]->C;
-			deadline = aTasks[task]->r + 500;
-			if (aTasks[task]->r > time) {
-				time = aTasks[task]->r;
+			release = aTasks[task]->r;
+			deadline = release + APERIODIC_DEADLINE;
+
+			// No need to loop over time where no uncompleted aperiodic tasks are released
+			if (release > time) {
+				time = release;
 			}
 		}
 	}
