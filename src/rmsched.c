@@ -32,6 +32,17 @@ void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
 Schedule* RmSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
 
+	bool preemptFlag = false;
+
+	uint8_t task; // index of pTask or aTask marking the active task
+
+	uint16_t
+		time, // marker for the current time while iterating
+		runtime, // the amount of time left to schedule for the current task
+		release, // the time at which the current task was released
+		deadline; // the time at which the current task will have missed its deadline
+
+	// Generate a list of periodic tasks sorted by shortest period first
 	PeriodicTask** pTasks = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
 	for (int i = 0; i < plan->pCount; i++) {
 		pTasks[i] = plan->pTasks + i;
@@ -39,70 +50,92 @@ Schedule* RmSimulation(SimPlan* plan) {
 	sortTasks(pTasks, plan->pCount);
 
 	// Generate the schedule ALAP in order of the highest priority periodic tasks
-	for (int i = 0; i < plan->pCount; i++) {
-		uint16_t runtime;
-		uint16_t release = 0;
+	for (task = 0; task < plan->pCount; task++) {
+		bool incompletePeriod = false;
+		deadline = release = 0;
 
-		bool hardDeadline = true;
-		int deadline = 0;
+		// Schedule all periods for the given task with whatever space is left in the schdule
+		// (Current task is the higest priority among unscheduled tasks)
 		while (deadline < plan->duration) {
-			deadline += pTasks[i]->T;
+			uint16_t finalPreempt = 0;
+			runtime = pTasks[task]->C;
+			preemptFlag = false;
+
+			// Increment at the start of the loop to catch an incomplete period
+			deadline += pTasks[task]->T;
 			if (deadline > plan->duration) {
 				deadline = plan->duration;
-				hardDeadline = false;
+				incompletePeriod = true;
 			}
-			runtime = pTasks[i]->C;
-			bool preempted = false;
-			int fake_preemption = 0;
-			for (int time = deadline - 1; runtime > 0; time--) {
+
+			// Iterate backwards in time so it is scheduled as late as possible
+			for (time = deadline - 1; runtime > 0; time--) {
 				if (sched->activeTask[time] == 0) {
-					if (fake_preemption == 0) {
-						fake_preemption = time;
+					// If not yet scheduled, it is the time at which we are preempted before missing a deadline
+					if (finalPreempt == 0) {
+						finalPreempt = time;
 					}
-					if (runtime != pTasks[i]->C && preempted) {
-						sched->flags[((time)* sched->tasks) + pTasks[i]->taskIndex] = STATUS_PREEMPTED;
+
+					// If the next task in the schedule is different we are about to be preempted
+					if (preemptFlag) {
+						sched->flags[((time)* sched->tasks) + pTasks[task]->taskIndex] = STATUS_PREEMPTED;
 					}
-					preempted = false;
-					sched->activeTask[time] = pTasks[i]->columnIndex;
+
+					// Signal to the next loop (time - 1) that at this point (time) the current task was running
+					preemptFlag = false;
+
+					// Schedule the current job for the given cycle
+					sched->activeTask[time] = pTasks[task]->columnIndex;
 					runtime--;
 				}
-				else {
-					preempted = true;
+
+				// If we have executed but not not at the current time signal preemption to the next loop (time - 1)
+				else if (runtime != pTasks[task]->C) {
+					preemptFlag = true;
 				}
+
+				// If we've iterated back to the release time then this task was unable to meet it's deadline
 				if (release == time && runtime != 0) {
-					if (hardDeadline) {
-						sched->flags[((fake_preemption)* sched->tasks) + pTasks[i]->taskIndex] = STATUS_PREEMPTED;
-						sched->flags[((deadline - 1) * sched->tasks) + pTasks[i]->taskIndex] = STATUS_OVERDUE;
+					// Or the deadline is past the simulation's end point and we don't know
+					if (!incompletePeriod) {
+						// The last time this task is scheduled for is the time when it's preempted
+						sched->flags[(finalPreempt * sched->tasks) + pTasks[task]->taskIndex] = STATUS_PREEMPTED;
+
+						// May overwrite the previous status if we were able to schedule at the deadline and that's ok
+						sched->flags[((deadline - 1) * sched->tasks) + pTasks[task]->taskIndex] = STATUS_OVERDUE;
 					}
 					break;
 				}
 			}
+
+			// The release time of the (n+1)'th period of the given task is the deadline of the n'th period
 			release = deadline;
 		}
 	}
 	free(pTasks);
 
+	// Generate a list of aperiodic tasks sorted by earliest release time first
 	AperiodicTask** aTasks = (AperiodicTask**)calloc(sizeof(AperiodicTask*), plan->aCount);
 	for (int i = 0; i < plan->aCount; i++) {
 		aTasks[i] = plan->aTasks + i;
 	}
-
 	sortTasks((PeriodicTask**)aTasks, plan->aCount);
-	int task = 0;
-	int time = aTasks[task]->r;
-	int running = aTasks[task]->C;
-	bool preemption = false;
-	int deadline = time + 500;
+
+	task = 0;
+	time = aTasks[task]->r;
+	runtime = aTasks[task]->C;
+	preemptFlag = false;
+	deadline = time + 500;
 
 	while (time < plan->duration && task < plan->aCount) {
 		if (sched->activeTask[time] == 0) {
-			preemption = true;
+			preemptFlag = true;
 			sched->activeTask[time] = aTasks[task]->columnIndex;
-			running--;
-			if (running == 0) {
+			runtime--;
+			if (runtime == 0) {
 				task++;
-				preemption = false;
-				running = aTasks[task]->C;
+				preemptFlag = false;
+				runtime = aTasks[task]->C;
 				deadline = aTasks[task]->r + 500;
 				if (aTasks[task]->r > time) {
 					time = aTasks[task]->r;
@@ -110,23 +143,23 @@ Schedule* RmSimulation(SimPlan* plan) {
 				}
 			}
 		}
-		else if (preemption) {
+		else if (preemptFlag) {
 			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_PREEMPTED;
-			preemption = false;
+			preemptFlag = false;
 		}
 		time++;
 		while (deadline == time) {
 			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_OVERDUE;
 			if (++task >= plan->aCount) { break; }
-			preemption = false;
-			running = aTasks[task]->C;
+			preemptFlag = false;
+			runtime = aTasks[task]->C;
 			deadline = aTasks[task]->r + 500;
 			if (aTasks[task]->r > time) {
 				time = aTasks[task]->r;
 			}
 		}
 	}
-
 	free(aTasks);
+
 	return sched;
 }
