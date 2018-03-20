@@ -258,4 +258,5 @@ void CleanSchedule(Schedule* schedule) {
 	free(schedule->flags);
 	free(schedule->responseTimes);
 	free(schedule->responseCount);
+	free(schedule);
 }
