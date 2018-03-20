@@ -64,12 +64,10 @@ Schedule* RmSimulation(SimPlan* plan) {
 						sched->flags[((fake_preemption)* sched->tasks) + pTasks[i]->taskIndex] = STATUS_PREEMPTED;
 						sched->flags[((deadline - 1) * sched->tasks) + pTasks[i]->taskIndex] = STATUS_OVERDUE;
 					}
-					printf("missed a deadline at %d\n", time);
 					break;
 				}
 			}
 			release = deadline;
-			printf("release %d\n", release);
 		}
 	}
 	free(pTasks);

@@ -68,39 +68,40 @@ SimPlan* ParsePlan(const char* file) {
 		fgets(buff, buffsize, fin);
 		plan->duration = atoi(buff);
 
-		printf("Time: %i\npCount: %i\n", plan->duration, plan->pCount);
-
-		plan->pTasks = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount);
-
-		// Parse the file pCount times to get the data for each periodic task
-		for (int i = 0; i < plan->pCount; ++i) {
-			line_n = getline(&buff, &buffsize, fin);
-			PeriodicTask* task = (plan->pTasks) + i;
-			ParseTask(buff, line_n, task);
-			task->taskIndex = i;
-			task->columnIndex = i + 1;
-			printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", i, task->ID, task->C, task->T);
+		if (plan->pCount > 0) {
+			plan->pTasks = (PeriodicTask*)calloc(sizeof(PeriodicTask), plan->pCount);
 		}
 	}
+	printf("Time: %i\npCount: %i\n", plan->duration, plan->pCount);
 
-	// Parse the file to get aCount
+	// Parse the file pCount times to get the data for each periodic task
+	for (int i = 0; i < plan->pCount; ++i) {
+		line_n = getline(&buff, &buffsize, fin);
+		PeriodicTask* task = (plan->pTasks) + i;
+		ParseTask(buff, line_n, task);
+		task->taskIndex = i;
+		task->columnIndex = i + 1;
+		printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", i, task->ID, task->C, task->T);
+	}
+
+	// Parse the file to get aCount (optional parameter)
 	char* optional = fgets(buff, buffsize, fin);
 	if (optional != NULL) {
 		plan->aCount = atoi(buff);
-
-		printf("aCount: %i\n", plan->aCount);
-
-		plan->aTasks = (AperiodicTask*)calloc(sizeof(AperiodicTask), plan->aCount);
-
-		// Parse the file aCount times to get the data for each periodic task
-		for (int i = 0; i < plan->aCount; ++i) {
-			line_n = getline(&buff, &buffsize, fin);
-			AperiodicTask* task = (plan->aTasks) + i;
-			ParseTask(buff, line_n, (PeriodicTask*)task);
-			task->taskIndex = plan->pCount + i;
-			task->columnIndex = plan->pCount + i + 1;
-			printf("aTasks[%i]: {ID: \"%s\", C: %i, r: %i}\n", i, task->ID, task->C, task->r);
+		if (plan->aCount > 0) {
+			plan->aTasks = (AperiodicTask*)calloc(sizeof(AperiodicTask), plan->aCount);
 		}
+	}
+	printf("aCount: %i\n", plan->aCount);
+
+	// Parse the file aCount times to get the data for each periodic task
+	for (int i = 0; i < plan->aCount; ++i) {
+		line_n = getline(&buff, &buffsize, fin);
+		AperiodicTask* task = (plan->aTasks) + i;
+		ParseTask(buff, line_n, (PeriodicTask*)task);
+		task->taskIndex = plan->pCount + i;
+		task->columnIndex = plan->pCount + i + 1;
+		printf("aTasks[%i]: {ID: \"%s\", C: %i, r: %i}\n", i, task->ID, task->C, task->r);
 	}
 
 	// A total count is worth summing now rather than later
