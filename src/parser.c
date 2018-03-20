@@ -10,7 +10,8 @@
 //---------------------------------------------------------------------------------------------------------------------+
 static inline void ParseTask(char* buff, size_t line_n, PeriodicTask* task) {
 	// Indicies of string parsing bounds
-	int bos = 0, // beginning of string
+	size_t
+		bos = 0, // beginning of string
 		eos = 0; // end of string
 
 	// Get the ID
@@ -56,8 +57,7 @@ SimPlan* ParsePlan(const char* file) {
 	size_t buffsize = 128;
 	char* buff = (char*)calloc(sizeof(char), buffsize);
 
-	size_t line_n; // n is the sizeof each read line including 2 for \r\n
-	size_t id_n; // a counter used to get the size of a task id
+	size_t line_n; // the length of each line (including 2 for \r\n)
 
 	{
 		// Parse the file to get pCount
