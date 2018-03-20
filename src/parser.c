@@ -48,7 +48,7 @@ static inline void ParseTask(char* buff, size_t line_n, PeriodicTask* task) {
 }
 
 //---------------------------------------------------------------------------------------------------------------------+
-// Returns a SimPlan struct with the relevant pTask settings based on data parsed from the given input file             |
+// Returns a SimPlan struct with the relevant task settings based on data parsed from the given input file             |
 //---------------------------------------------------------------------------------------------------------------------+
 SimPlan* ParsePlan(const char* file) {
 	SimPlan* plan = (SimPlan*)calloc(sizeof(SimPlan), 1);
@@ -74,7 +74,7 @@ SimPlan* ParsePlan(const char* file) {
 	}
 	printf("Time: %i\npCount: %i\n", plan->duration, plan->pCount);
 
-	// Parse the file pCount times to get the data for each periodic pTask
+	// Parse the file pCount times to get the data for each periodic task
 	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
 		line_n = getline(&buff, &buffsize, fin);
 		PeriodicTask* task = (plan->pTasks) + pTask;
