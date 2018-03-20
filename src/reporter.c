@@ -28,10 +28,10 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 	uint8_t* activeTask = sched->activeTask;
 	char* flags = sched->flags;
 
-	//                9 => 8-char wide column plus one edge of the column border
-	//                                  + 1 for the time column
-	//                                        + 1 for the table edge
-	int tableWidth = (9 * (sched->tasks + 1)) + 1;
+	//                     9 => 8-char wide column plus one edge of the column border
+	//                                       + 1 for the time column
+	//                                             + 1 for the table edge
+	uint16_t tableWidth = (9 * (sched->tasks + 1)) + 1;
 
 	//                                    + 3 for \r\n\0
 	char* buff = (char*)malloc(tableWidth + 3);
@@ -47,7 +47,7 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 	// Generate the first row of the table: "+---+"
 	{
 		buff[0] = buff[tableWidth - 1] = '+';
-		for (int i = 1; i < tableWidth - 1; ++i) {
+		for (uint16_t i = 1; i < tableWidth - 1; ++i) {
 			buff[i] = '-';
 		}
 		fprintf(fout, "%s", buff);
@@ -57,11 +57,11 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 	{
 		memcpy(buff, "|  Time  | ", 10);
 		char* current = buff + 10;
-		for (int task = 0; task < sched->tasks; ++task) {
+		for (uint8_t task = 0; task < sched->tasks; ++task) {
 			// Fills each column header with a given id text truncated to 6 digits and centered
 			// Includes spaces on either side and a right side column separator
 			char* id = sched->header[task];
-			int len = strlen(id);
+			size_t len = strlen(id);
 
 			// Left side space
 			*current = ' ';
@@ -73,8 +73,8 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 			}
 			else {
 				// spaces prepended to the id
-				int lhs = (6 - len) / 2;
-				for (int j = 0; j < lhs; ++j) {
+				size_t lhs = (6 - len) / 2;
+				for (size_t j = 0; j < lhs; ++j) {
 					current[j] = ' ';
 				}
 
@@ -82,7 +82,7 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 				memcpy(current + lhs, id, len);
 
 				// spaces appended to the id
-				for (int j = lhs + len; j < 6; ++j) {
+				for (size_t j = lhs + len; j < 6; ++j) {
 					current[j] = ' ';
 				}
 			}
@@ -97,19 +97,19 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 
 	// Generate separator row: "|---|---|---|"
 	{
-		for (int i = 0; i < tableWidth; ++i) {
+		for (uint16_t i = 0; i < tableWidth; ++i) {
 			buff[i] = i % 9 == 0 ? '|' : '-';
 		}
 		fprintf(fout, "%s", buff);
 	}
 
 	// Output data
-	for (int now = 0; now < sched->duration; ++now) {
+	for (uint16_t now = 0; now < sched->duration; ++now) {
 		// Print the time
 		colCounter(buff + 1, now);
 
 		// Clear each column
-		for (int task = 0; task < sched->tasks; ++task) {
+		for (uint8_t task = 0; task < sched->tasks; ++task) {
 			//          + 1 => Skip the left table edge
 			//                 9 * => each column is 8 digits wide plus a column edge
 			//                           + 1 => skip the time column
@@ -126,7 +126,7 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 		}
 
 		// Apply other flags to all relevant tasks
-		for (int task = 0; task < sched->tasks; ++task) {
+		for (uint8_t task = 0; task < sched->tasks; ++task) {
 			char flag = flags[(now * sched->tasks) + task];
 
 			switch (flag) {
@@ -150,7 +150,7 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 
 	// Generate separator row: "|---|---|---|"
 	{
-		for (int i = 0; i < tableWidth; ++i) {
+		for (uint16_t i = 0; i < tableWidth; ++i) {
 			buff[i] = i % 9 == 0 ? '|' : '-';
 		}
 		fprintf(fout, "%s", buff);
@@ -160,7 +160,7 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 	{
 		memcpy(buff + 1, " dCount ", 8);
 
-		for (int task = 0; task < sched->tasks; ++task) {
+		for (uint8_t task = 0; task < sched->tasks; ++task) {
 			uint8_t cnt = dCount[task];
 			dTotal += cnt;
 			colCounter(buff + 1 + (9 * (task + 1)), cnt);
@@ -172,7 +172,7 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 	{
 		memcpy(buff + 1, " pCount ", 8);
 
-		for (int task = 0; task < sched->tasks; ++task) {
+		for (uint8_t task = 0; task < sched->tasks; ++task) {
 			uint8_t cnt = pCount[task];
 			pTotal += cnt;
 			colCounter(buff + 1 + (9 * (task + 1)), cnt);
@@ -184,7 +184,7 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 	// Generate the last row of the table: "+---+"
 	{
 		buff[0] = buff[tableWidth - 1] = '+';
-		for (int i = 1; i < tableWidth - 1; ++i) {
+		for (uint16_t i = 1; i < tableWidth - 1; ++i) {
 			buff[i] = '-';
 		}
 		fprintf(fout, "%s", buff);
@@ -217,29 +217,30 @@ Schedule* MakeSchedule(SimPlan* plan) {
 
 	// Auto-fill the headers based on the task ID's in the given plan
 	sched->header = (char**)malloc(sizeof(char*) * sched->tasks);
-	int i = 0;
-	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
-		sched->header[i] = plan->pTasks[pTask].ID;
+	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
+		PeriodicTask* task = plan->pTasks + pTask;
+		sched->header[task->taskIndex] = task->ID;
 	}
-	for (int aTask = 0; aTask < plan->aCount; ++aTask, ++i) {
-		sched->header[i] = plan->aTasks[aTask].ID;
+	for (uint8_t aTask = 0; aTask < plan->aCount; ++aTask) {
+		AperiodicTask* task = plan->aTasks + aTask;
+		sched->header[task->taskIndex] = task->ID;
 	}
 
 	// Clear status state for all tasks at all times
-	int flag_n = sched->duration * sched->tasks;
+	uint32_t flag_n = sched->duration * sched->tasks;
 	sched->flags = (char*)malloc(sizeof(char) * flag_n);
-	for (int i = 0; i < flag_n; ++i) {
-		sched->flags[i] = STATUS_NONE;
+	for (uint32_t flag = 0; flag < flag_n; ++flag) {
+		sched->flags[flag] = STATUS_NONE;
 	}
 
 	// Release times are independent of schedule, so generate them up-front
-	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
+	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
 		PeriodicTask* task = plan->pTasks + pTask;
-		for (int t = 0; t < sched->duration; t += task->T) {
-			sched->flags[(t * plan->tasks) + task->taskIndex] = STATUS_RELEASED;
+		for (uint16_t time = 0; time < sched->duration; time += task->T) {
+			sched->flags[(time * plan->tasks) + task->taskIndex] = STATUS_RELEASED;
 		}
 	}
-	for (int aTask = 0; aTask < plan->aCount; ++aTask, ++i) {
+	for (uint8_t aTask = 0; aTask < plan->aCount; ++aTask) {
 		AperiodicTask* task = plan->aTasks + aTask;
 		sched->flags[(task->r * plan->tasks) + task->taskIndex] = STATUS_RELEASED;
 	}

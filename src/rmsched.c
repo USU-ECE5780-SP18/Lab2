@@ -10,8 +10,8 @@
 // Exploits symmetry of (AperiodicTask*)->r to achieve earliest release priority for aperiodic tasks                   |
 //---------------------------------------------------------------------------------------------------------------------+
 static inline void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
-	for (int i = 0; i < pCount; i++) {
-		for (int j = i + 1; j < pCount; j++) {
+	for (uint8_t i = 0; i < pCount; i++) {
+		for (uint8_t j = i + 1; j < pCount; j++) {
 			if (tasks[j]->T < tasks[i]->T) {
 				PeriodicTask* temp = tasks[i];
 				tasks[i] = tasks[j];

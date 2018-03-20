@@ -32,9 +32,9 @@ Schedule* EdfSimulation(SimPlan* plan) {
 	ListNode** releaseSchedule = (ListNode**)calloc(sizeof(ListNode*), sched->duration);
 
 	// Fill the release schedule with all periodic tasks
-	for (int pTask = 0; pTask < plan->pCount; ++pTask) {
+	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
 		PeriodicTask* task = (plan->pTasks) + pTask;
-		int time = 0;
+		uint16_t time = 0;
 		while (time < sched->duration) {
 			// Create the job
 			Job* job = (Job*)malloc(sizeof(Job));
@@ -59,7 +59,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 	}
 
 	// Fill the release schedule with all aperiodic tasks
-	for (int aTask = 0; aTask < plan->aCount; ++aTask) {
+	for (uint8_t aTask = 0; aTask < plan->aCount; ++aTask) {
 		AperiodicTask* task = (plan->aTasks) + aTask;
 
 		// Create the job
@@ -90,7 +90,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 	// There are two points of decision on which task executes at any given time:
 	//   1 - when a task is released (preempt if one has an earlier deadline than the active task)
 	//   2 - when a task completes (or stops due to missing its deadline) find the earliest deadline in wait
-	for (int time = 0; time < sched->duration; ++time) {
+	for (uint16_t time = 0; time < sched->duration; ++time) {
 		char* flagsPrev = sched->flags + ((time - 1) * sched->tasks);
 		char* flagsNow = sched->flags + (time * sched->tasks);
 

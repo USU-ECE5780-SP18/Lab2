@@ -75,13 +75,13 @@ SimPlan* ParsePlan(const char* file) {
 	printf("Time: %i\npCount: %i\n", plan->duration, plan->pCount);
 
 	// Parse the file pCount times to get the data for each periodic task
-	for (int i = 0; i < plan->pCount; ++i) {
+	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
 		line_n = getline(&buff, &buffsize, fin);
-		PeriodicTask* task = (plan->pTasks) + i;
+		PeriodicTask* task = (plan->pTasks) + pTask;
 		ParseTask(buff, line_n, task);
-		task->taskIndex = i;
-		task->columnIndex = i + 1;
-		printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", i, task->ID, task->C, task->T);
+		task->taskIndex = pTask;
+		task->columnIndex = pTask + 1;
+		printf("pTasks[%i]: {ID: \"%s\", C: %i, T: %i}\n", pTask, task->ID, task->C, task->T);
 	}
 
 	// Parse the file to get aCount (optional parameter)
@@ -94,14 +94,14 @@ SimPlan* ParsePlan(const char* file) {
 	}
 	printf("aCount: %i\n", plan->aCount);
 
-	// Parse the file aCount times to get the data for each periodic task
-	for (int i = 0; i < plan->aCount; ++i) {
+	// Parse the file aCount times to get the data for each periodic pTask
+	for (uint8_t aTask = 0; aTask < plan->aCount; ++aTask) {
 		line_n = getline(&buff, &buffsize, fin);
-		AperiodicTask* task = (plan->aTasks) + i;
+		AperiodicTask* task = (plan->aTasks) + aTask;
 		ParseTask(buff, line_n, (PeriodicTask*)task);
-		task->taskIndex = plan->pCount + i;
-		task->columnIndex = plan->pCount + i + 1;
-		printf("aTasks[%i]: {ID: \"%s\", C: %i, r: %i}\n", i, task->ID, task->C, task->r);
+		task->taskIndex = plan->pCount + aTask;
+		task->columnIndex = plan->pCount + aTask + 1;
+		printf("aTasks[%i]: {ID: \"%s\", C: %i, r: %i}\n", aTask, task->ID, task->C, task->r);
 	}
 
 	// A total count is worth summing now rather than later
@@ -113,14 +113,14 @@ SimPlan* ParsePlan(const char* file) {
 
 void CleanPlan(SimPlan* plan) {
 	// Cleanup pTasks
-	for (int i = 0; i < plan->pCount; ++i) {
-		free(plan->pTasks[i].ID);
+	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
+		free(plan->pTasks[pTask].ID);
 	}
 	free(plan->pTasks);
 
 	// Cleanup aTasks
-	for (int i = 0; i < plan->aCount; ++i) {
-		free(plan->aTasks[i].ID);
+	for (uint8_t aTask = 0; aTask < plan->aCount; ++aTask) {
+		free(plan->aTasks[aTask].ID);
 	}
 	free(plan->aTasks);
 
