@@ -87,10 +87,14 @@ Schedule* EdfSimulation(SimPlan* plan) {
 	// List of waiting tasks
 	ListNode* wait = NULL;
 
+	// There are two points of decision on which task executes at any given time:
+	//   1 - when a task is released (preempt if one has an earlier deadline than the active task)
+	//   2 - when a task completes (or stops due to missing its deadline) find the earliest deadline in wait
 	for (int time = 0; time < sched->duration; ++time) {
 		char* flagsPrev = sched->flags + ((time - 1) * sched->tasks);
 		char* flagsNow = sched->flags + (time * sched->tasks);
 
+		// First decision point: one or more tasks have been released
 		if (releaseSchedule[time] != NULL) {
 			ListNode* released = releaseSchedule[time];
 			releaseSchedule[time] = NULL;
@@ -158,13 +162,14 @@ Schedule* EdfSimulation(SimPlan* plan) {
 			}
 		}
 
+		// Execute the active task - potentially deal with the second decision point: closeJob
 		if (active != NULL) {
 			sched->activeTask[time] = active->value->genericTask->columnIndex;
 			active->value->R--;
 
 			bool closeJob = false;
 
-			// finished
+			// Job's finished (imagine an SCV's voice from starcraft)
 			if (active->value->R == 0) {
 				closeJob = true;
 			}
@@ -180,6 +185,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 				CleanNode(active);
 				active = NULL;
 
+				// Loop to make sure we handle multiple missed multiple deadlines as long as there are jobs in wait
 				while (wait != NULL) {
 					ListNode* EarliestDeadline = wait;
 					ListNode* listIterator = wait->next;
