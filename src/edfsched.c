@@ -34,8 +34,8 @@ Schedule* EdfSimulation(SimPlan* plan) {
 	// Fill the release schedule with all periodic tasks
 	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
 		PeriodicTask* task = (plan->pTasks) + pTask;
-		uint16_t time = 0;
-		while (time < sched->duration) {
+		uint16_t release = 0;
+		while (release < sched->duration) {
 			// Create the job
 			Job* job = (Job*)malloc(sizeof(Job));
 			job->genericTask = task;
@@ -47,14 +47,14 @@ Schedule* EdfSimulation(SimPlan* plan) {
 			ListNode* node = (ListNode*)malloc(sizeof(ListNode));
 			node->value = job;
 			node->prev = NULL;
-			node->next = releaseSchedule[time];
+			node->next = releaseSchedule[release];
 			if (node->next != NULL) {
 				node->next->prev = node;
 			}
-			releaseSchedule[time] = node;
+			releaseSchedule[release] = node;
 
 			// Set the deadline last, since it will also update our iterator
-			job->d = (time += task->T);
+			job->d = (release += task->T);
 		}
 	}
 
@@ -90,14 +90,14 @@ Schedule* EdfSimulation(SimPlan* plan) {
 	// There are two points of decision on which task executes at any given time:
 	//   1 - when a task is released (preempt if one has an earlier deadline than the active task)
 	//   2 - when a task completes (or stops due to missing its deadline) find the earliest deadline in wait
-	for (uint16_t time = 0; time < sched->duration; ++time) {
-		char* flagsPrev = sched->flags + ((time - 1) * sched->tasks);
-		char* flagsNow = sched->flags + (time * sched->tasks);
+	for (uint16_t now = 0; now < sched->duration; ++now) {
+		char* flagsPrev = sched->flags + ((now - 1) * sched->tasks);
+		char* flagsNow = sched->flags + (now * sched->tasks);
 
 		// First decision point: one or more tasks have been released
-		if (releaseSchedule[time] != NULL) {
-			ListNode* released = releaseSchedule[time];
-			releaseSchedule[time] = NULL;
+		if (releaseSchedule[now] != NULL) {
+			ListNode* released = releaseSchedule[now];
+			releaseSchedule[now] = NULL;
 
 			ListNode* EarliestDeadline = active;
 			ListNode* listIterator = released;
@@ -138,7 +138,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 					}
 
 					// Make sure we didn't just switch to active in a previous iteration of the loop (not preemption)
-					if (sched->activeTask[time - 1] == active->value->genericTask->columnIndex) {
+					if (sched->activeTask[now - 1] == active->value->genericTask->columnIndex) {
 						flagsPrev[active->value->genericTask->taskIndex] = STATUS_PREEMPTED;
 					}
 
@@ -165,7 +165,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 
 		// Execute the active task - potentially deal with the second decision point: closeJob
 		if (active != NULL) {
-			sched->activeTask[time] = active->value->genericTask->columnIndex;
+			sched->activeTask[now] = active->value->genericTask->columnIndex;
 			active->value->R--;
 
 			bool closeJob = false;
@@ -176,7 +176,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 			}
 
 			// Missed deadline
-			else if (active->value->d == time + 1) {
+			else if (active->value->d == now + 1) {
 				flagsNow[active->value->genericTask->taskIndex] = STATUS_OVERDUE;
 				closeJob = true;
 			}
@@ -214,7 +214,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 					active = EarliestDeadline;
 
 					// Check to make sure active is not going to miss its deadline as it's about to start
-					if (active->value->d == time + 1) {
+					if (active->value->d == now + 1) {
 						flagsNow[active->value->genericTask->taskIndex] = STATUS_OVERDUE;
 						CleanNode(active);
 						active = NULL;

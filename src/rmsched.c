@@ -37,7 +37,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 	uint8_t task; // index of pTask or aTask marking the active task
 
 	uint16_t
-		time, // marker for the current time while iterating
+		now, // marker for the current time while iterating
 		runtime, // the amount of time left to schedule for the current task
 		release, // the time at which the current task was released
 		deadline; // the time at which the current task will have missed its deadline
@@ -69,33 +69,33 @@ Schedule* RmSimulation(SimPlan* plan) {
 			}
 
 			// Iterate backwards in time so it is scheduled as late as possible
-			for (time = deadline - 1; runtime > 0; time--) {
-				if (sched->activeTask[time] == 0) {
+			for (now = deadline - 1; runtime > 0; now--) {
+				if (sched->activeTask[now] == 0) {
 					// If not yet scheduled, it is the time at which we are preempted before missing a deadline
 					if (finalPreempt == 0) {
-						finalPreempt = time;
+						finalPreempt = now;
 					}
 
 					// If the next task in the schedule is different we are about to be preempted
 					if (preemptFlag) {
-						sched->flags[((time)* sched->tasks) + pTasks[task]->taskIndex] = STATUS_PREEMPTED;
+						sched->flags[(now * sched->tasks) + pTasks[task]->taskIndex] = STATUS_PREEMPTED;
 					}
 
-					// Signal to the next loop (time - 1) that at this point (time) the current task was running
+					// Signal to the next loop (now - 1) that at this point (now) the current task was running
 					preemptFlag = false;
 
 					// Schedule the current job for the given cycle
-					sched->activeTask[time] = pTasks[task]->columnIndex;
+					sched->activeTask[now] = pTasks[task]->columnIndex;
 					runtime--;
 				}
 
-				// If we have executed but not not at the current time signal preemption to the next loop (time - 1)
+				// If we have executed but not not at the current now signal preemption to the next loop (now - 1)
 				else if (runtime != pTasks[task]->C) {
 					preemptFlag = true;
 				}
 
 				// If we've iterated back to the release time then this task was unable to meet it's deadline
-				if (release == time && runtime != 0) {
+				if (release == now && runtime != 0) {
 					// Or the deadline is past the simulation's end point and we don't know
 					if (!incompletePeriod) {
 						// The last time this task is scheduled for is the time when it's preempted
@@ -129,15 +129,15 @@ Schedule* RmSimulation(SimPlan* plan) {
 	deadline = release + APERIODIC_DEADLINE;
 
 	// No need to loop over time before the first aperiodic tasks is released
-	time = release;
+	now = release;
 
 	// Aperiodic tasks don't switch as often as periodic tasks: aTasks[i + 1] does not execute until aTasks[i] is done
 	// Exploit this fact to loop over time and aTasks in the same loop
-	while (time < plan->duration && task < plan->aCount) {
+	while (now < plan->duration && task < plan->aCount) {
 
 		// Only schedule where there is slack
-		if (sched->activeTask[time] == 0) {
-			sched->activeTask[time] = aTasks[task]->columnIndex;
+		if (sched->activeTask[now] == 0) {
+			sched->activeTask[now] = aTasks[task]->columnIndex;
 			runtime--;
 
 			// Signal to the next cycle that we ran this cycle
@@ -152,8 +152,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 				deadline = release + APERIODIC_DEADLINE;
 
 				// No need to loop over time where no uncompleted aperiodic tasks are released
-				if (release > time) {
-					time = release;
+				if (release > now) {
+					now = release;
 					continue;
 				}
 			}
@@ -161,17 +161,17 @@ Schedule* RmSimulation(SimPlan* plan) {
 
 		// If there is not slack in this cycle, and we ran the last cycle, we were preempted in that cycle
 		else if (preemptFlag) {
-			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_PREEMPTED;
+			sched->flags[((now - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_PREEMPTED;
 			preemptFlag = false;
 		}
 
 		// The iterator through time which we avoid using as much as possible
-		time++;
+		now++;
 
 		// Loop in order to handle multiple aperiodic tasks having the same deadline
-		while (deadline == time) {
+		while (deadline == now) {
 			// Our standard (because of periodic tasks) is to mark the missed deadline at deadline - 1
-			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_OVERDUE;
+			sched->flags[((now - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_OVERDUE;
 			
 			// Proc the next aperiodic task that (was/will be) released
 			if (++task >= plan->aCount) { break; }
@@ -181,8 +181,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 			deadline = release + APERIODIC_DEADLINE;
 
 			// No need to loop over time where no uncompleted aperiodic tasks are released
-			if (release > time) {
-				time = release;
+			if (release > now) {
+				now = release;
 			}
 		}
 	}

@@ -236,8 +236,8 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	// Release times are independent of schedule, so generate them up-front
 	for (uint8_t pTask = 0; pTask < plan->pCount; ++pTask) {
 		PeriodicTask* task = plan->pTasks + pTask;
-		for (uint16_t time = 0; time < sched->duration; time += task->T) {
-			sched->flags[(time * plan->tasks) + task->taskIndex] = STATUS_RELEASED;
+		for (uint16_t release = 0; release < sched->duration; release += task->T) {
+			sched->flags[(release * plan->tasks) + task->taskIndex] = STATUS_RELEASED;
 		}
 	}
 	for (uint8_t aTask = 0; aTask < plan->aCount; ++aTask) {
