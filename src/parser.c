@@ -52,13 +52,13 @@ inline void ParseTask(char* buff, size_t line_n, PeriodicTask* task) {
 SimPlan* ParsePlan(const char* file) {
 	SimPlan* plan = (SimPlan*)calloc(sizeof(SimPlan), 1);
 	FILE* fin = fopen(file, "r");
-	
+
 	size_t buffsize = 128;
 	char* buff = (char*)calloc(sizeof(char), buffsize);
-	
+
 	size_t line_n; // n is the sizeof each read line including 2 for \r\n
 	size_t id_n; // a counter used to get the size of a task id
-	
+
 	{
 		// Parse the file to get pCount
 		fgets(buff, buffsize, fin);
@@ -106,7 +106,7 @@ SimPlan* ParsePlan(const char* file) {
 
 	// A total count is worth summing now rather than later
 	plan->tasks = plan->pCount + plan->aCount;
-	
+
 	fclose(fin);
 	return plan;
 }
@@ -117,13 +117,13 @@ void CleanPlan(SimPlan* plan) {
 		free(plan->pTasks[i].ID);
 	}
 	free(plan->pTasks);
-	
+
 	// Cleanup aTasks
 	for (int i = 0; i < plan->aCount; ++i) {
 		free(plan->aTasks[i].ID);
 	}
 	free(plan->aTasks);
-	
+
 	// Cleanup plan
 	free(plan);
 }

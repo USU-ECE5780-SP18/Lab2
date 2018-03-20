@@ -61,7 +61,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 					preempted = false;
 					sched->activeTask[time] = pTasks[i]->columnIndex;
 					runtime--;
-				} else {
+				}
+				else {
 					preempted = true;
 				}
 				if (release == time && runtime != 0) {
@@ -104,7 +105,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 					continue;
 				}
 			}
-		} else if (preemption) {
+		}
+		else if (preemption) {
 			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_PREEMPTED;
 			preemption = false;
 		}

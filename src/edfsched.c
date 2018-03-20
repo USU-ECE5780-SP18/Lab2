@@ -57,7 +57,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 	// Fill the release schedule with all aperiodic tasks (implicit deadline of 500 milliseconds)
 	for (int aTask = 0; aTask < plan->aCount; ++aTask) {
 		AperiodicTask* task = (plan->aTasks) + aTask;
-		
+
 		// Create the job
 		Job* job = (Job*)malloc(sizeof(Job));
 		job->genericTask = (PeriodicTask*)task;
