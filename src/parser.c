@@ -3,33 +3,47 @@
 #include <stdlib.h>
 #include <string.h>
 
-// The file layout matches our struct layouts for both periodic and aperiodic
-// So we can conveniently typecast as either or and parse correctly
+//---------------------------------------------------------------------------------------------------------------------+
+// Helper which decreases code duplication in the parsing of periodic and aperiodic tasks from the input file          |
+// Exploits the symmetry of struct PeriodicTask and struct AperiodicTask                                               |
+// Exploits the symmetry of the input file format "ID, C, T/r" for Periodic/Aperiodic                                  |
+//---------------------------------------------------------------------------------------------------------------------+
 inline void ParseTask(char* buff, size_t line_n, PeriodicTask* task) {
+	// Indicies of string parsing bounds
+	int bos = 0, // beginning of string
+		eos = 0; // end of string
+
 	// Get the ID
-	int eos = 0; // end of string
-	while (eos < line_n && buff[eos] != ',') { ++eos; }
-	// A fully rigorous program would probably do some validation here
-	// calloc for convenient null terminator
-	// performance implications compared to manually adding \0 after malloc and memcpy unknown
-	task->ID = (char*)calloc(sizeof(char), eos + 1);
-	memcpy(task->ID, buff, eos);
+	{
+		while (eos < line_n && buff[eos] != ',') { ++eos; }
+		// A fully rigorous program would probably do some validation here
+
+		task->ID = (char*)malloc(eos + 1);
+		memcpy(task->ID, buff, eos);
+		task->ID[eos] = 0;
+	}
 
 	// Get the execution time
-	int bos = eos++; // beginning of string
-	while (eos < line_n && buff[eos] == ' ') { ++eos; ++bos; } // Get rid of space
-	while (eos < line_n && buff[eos] != ',') { ++eos; }
-	// A fully rigorous program would probably do some validation here
-	buff[eos] = 0; // create null pointer to aid atoi
-	task->C = atoi(buff + bos);
+	{
+		bos = ++eos; // buff + eos => ", ", buff + (++eos) => " "
+		while (eos < line_n && buff[eos] == ' ') { ++eos; ++bos; } // Get rid of space
+		while (eos < line_n && buff[eos] != ',') { ++eos; }
+		// A fully rigorous program would probably do some validation here
+
+		buff[eos] = 0; // replace comma with a null pointer to aid the atoi function
+		task->C = atoi(buff + bos);
+	}
 
 	// Get the period (for periodic) or the absolute release time (for aperiodic)
-	bos = eos++;
-	while (eos < line_n && buff[eos] == ' ') { ++eos; ++bos; } // Get rid of space
-	while (eos < line_n && buff[eos] != ',') { ++eos; }
-	// A fully rigorous program would probably do some validation here
-	buff[eos] = 0; // create null pointer to aid atoi
-	task->T = atoi(buff + bos); // same memory location and size for (AperiodicTask*)->r
+	{
+		bos = ++eos; // buff + eos => "\0 ", buff + (++eos) => " "
+		while (eos < line_n && buff[eos] == ' ') { ++eos; ++bos; } // Get rid of space
+		while (eos < line_n && buff[eos] != ',') { ++eos; }
+		// A fully rigorous program would probably do some validation here
+
+		buff[eos] = 0; // replace comma with a null pointer to aid the atoi function
+		task->T = atoi(buff + bos); // same memory location and size for (AperiodicTask*)->r
+	}
 }
 
 //---------------------------------------------------------------------------------------------------------------------+
