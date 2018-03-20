@@ -80,9 +80,9 @@ Schedule* RmSimulation(SimPlan* plan) {
 	}
 
 	sortTasks((PeriodicTask**)aTasks, plan->aCount);
-	int time = aTasks[0]->r;
 	int task = 0;
-	int running = aTasks[0]->C;
+	int time = aTasks[task]->r;
+	int running = aTasks[task]->C;
 	bool preemption = false;
 	int deadline = time + 500;
 
@@ -92,7 +92,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 			sched->activeTask[time] = aTasks[task]->columnIndex;
 			running--;
 			if (running == 0) {
-				aTasks++;
+				task++;
 				preemption = false;
 				running = aTasks[task]->C;
 				deadline = aTasks[task]->r + 500;
@@ -108,7 +108,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 		time++;
 		while (deadline == time) {
 			sched->flags[((time - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_OVERDUE;
-			aTasks++;
+			if (++task >= plan->aCount) { break; }
 			preemption = false;
 			running = aTasks[task]->C;
 			deadline = aTasks[task]->r + 500;
