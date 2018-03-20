@@ -26,6 +26,9 @@ void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
 	}
 }
 
+//---------------------------------------------------------------------------------------------------------------------+
+// Generates a schedule for rate monotonic where periodic tasks are scheduled ALAP                                     |
+//---------------------------------------------------------------------------------------------------------------------+
 Schedule* RmSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
 

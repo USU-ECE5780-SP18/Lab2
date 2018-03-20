@@ -23,6 +23,9 @@ static inline void CleanNode(ListNode* node) {
 	free(node);
 }
 
+//---------------------------------------------------------------------------------------------------------------------+
+// Generates a basic earliest deadline first schedule                                                                  |
+//---------------------------------------------------------------------------------------------------------------------+
 Schedule* EdfSimulation(SimPlan* plan) {
 	Schedule* sched = MakeSchedule(plan);
 
