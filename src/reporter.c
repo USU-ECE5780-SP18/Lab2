@@ -6,7 +6,7 @@
 //---------------------------------------------------------------------------------------------------------------------+
 // Outputs a number to the given column in the table (0 - 9999)                                                        |
 //---------------------------------------------------------------------------------------------------------------------+
-inline void colCounter(char* col, uint16_t n) {
+static inline void colCounter(char* col, uint16_t n) {
 	// Two spaces before the number
 	col[0] = col[1] = ' ';
 
@@ -24,18 +24,14 @@ inline void colCounter(char* col, uint16_t n) {
 //---------------------------------------------------------------------------------------------------------------------+
 // Generates the output table in the given file for a fully generated schedule                                         |
 //---------------------------------------------------------------------------------------------------------------------+
-void WriteSchedule(FILE* fout, Schedule* schedule) {
-	uint16_t& duration = schedule->duration;
-	uint8_t& tasks = schedule->tasks;
-	char** header = schedule->header;
-
-	uint8_t* activeTask = schedule->activeTask;
-	char* flags = schedule->flags;
+void WriteSchedule(FILE* fout, Schedule* sched) {
+	uint8_t* activeTask = sched->activeTask;
+	char* flags = sched->flags;
 
 	//                9 => 8-char wide column plus one edge of the column border
-	//                           + 1 for the time column
-	//                                 + 1 for the table edge
-	int tableWidth = (9 * (tasks + 1)) + 1;
+	//                                  + 1 for the time column
+	//                                        + 1 for the table edge
+	int tableWidth = (9 * (sched->tasks + 1)) + 1;
 
 	//                                    + 3 for \r\n\0
 	char* buff = (char*)malloc(tableWidth + 3);
@@ -45,8 +41,8 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	uint16_t utilization = 0;
 
 	// Counter variables for preemption and missed deadlines
-	uint8_t* pCount = (uint8_t*)calloc(sizeof(uint8_t), tasks);
-	uint8_t* dCount = (uint8_t*)calloc(sizeof(uint8_t), tasks);
+	uint8_t* pCount = (uint8_t*)calloc(sizeof(uint8_t), sched->tasks);
+	uint8_t* dCount = (uint8_t*)calloc(sizeof(uint8_t), sched->tasks);
 
 	// Generate the first row of the table: "+---+"
 	{
@@ -61,10 +57,10 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	{
 		memcpy(buff, "|  Time  | ", 10);
 		char* current = buff + 10;
-		for (int task = 0; task < tasks; ++task) {
+		for (int task = 0; task < sched->tasks; ++task) {
 			// Fills each column header with a given id text truncated to 6 digits and centered
 			// Includes spaces on either side and a right side column separator
-			char* id = header[task];
+			char* id = sched->header[task];
 			int len = strlen(id);
 
 			// Left side space
@@ -108,12 +104,12 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	}
 
 	// Output data
-	for (int now = 0; now < duration; ++now) {
+	for (int now = 0; now < sched->duration; ++now) {
 		// Print the time
 		colCounter(buff + 1, now);
 
 		// Clear each column
-		for (int task = 0; task < tasks; ++task) {
+		for (int task = 0; task < sched->tasks; ++task) {
 			//          + 1 => Skip the left table edge
 			//                 9 * => each column is 8 digits wide plus a column edge
 			//                           + 1 => skip the time column
@@ -121,8 +117,8 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 		}
 
 		// Star the actively running task
-		uint8_t& active = activeTask[now];
-		if (active != 0 && active <= tasks) {
+		uint8_t active = activeTask[now];
+		if (active != 0 && active <= sched->tasks) {
 			++utilization;
 
 			// Compiler should simplify the arithmetic to two operations, left more for clarity
@@ -130,8 +126,8 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 		}
 
 		// Apply other flags to all relevant tasks
-		for (int task = 0; task < tasks; ++task) {
-			char& flag = flags[(now * tasks) + task];
+		for (int task = 0; task < sched->tasks; ++task) {
+			char flag = flags[(now * sched->tasks) + task];
 
 			switch (flag) {
 				case STATUS_OVERDUE:
@@ -164,8 +160,8 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	{
 		memcpy(buff + 1, " dCount ", 8);
 
-		for (int task = 0; task < tasks; ++task) {
-			uint8_t& cnt = dCount[task];
+		for (int task = 0; task < sched->tasks; ++task) {
+			uint8_t cnt = dCount[task];
 			dTotal += cnt;
 			colCounter(buff + 1 + (9 * (task + 1)), cnt);
 		}
@@ -176,8 +172,8 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	{
 		memcpy(buff + 1, " pCount ", 8);
 
-		for (int task = 0; task < tasks; ++task) {
-			uint8_t& cnt = pCount[task];
+		for (int task = 0; task < sched->tasks; ++task) {
+			uint8_t cnt = pCount[task];
 			pTotal += cnt;
 			colCounter(buff + 1 + (9 * (task + 1)), cnt);
 		}
@@ -197,7 +193,7 @@ void WriteSchedule(FILE* fout, Schedule* schedule) {
 	// Print the summary statistics
 	fprintf(fout,
 		"Utilization: %.4f\r\nMissed Deadlines: %i\r\nPreemption Count: %i\r\n",
-		((float)utilization) / duration, dTotal, pTotal);
+		((float)utilization) / sched->duration, dTotal, pTotal);
 
 	free(dCount);
 	free(pCount);
@@ -232,14 +228,14 @@ Schedule* MakeSchedule(SimPlan* plan) {
 
 	// Release times are independent of schedule, so generate them up-front
 	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
-		PeriodicTask& task = plan->pTasks[pTask];
-		for (int t = 0; t < sched->duration; t += task.T) {
-			sched->flags[(t * plan->tasks) + task.taskIndex] = STATUS_RELEASED;
+		PeriodicTask* task = plan->pTasks + pTask;
+		for (int t = 0; t < sched->duration; t += task->T) {
+			sched->flags[(t * plan->tasks) + task->taskIndex] = STATUS_RELEASED;
 		}
 	}
 	for (int aTask = 0; aTask < plan->aCount; ++aTask, ++i) {
-		AperiodicTask& task = plan->aTasks[aTask];
-		sched->flags[(task.r * plan->tasks) + task.taskIndex] = STATUS_RELEASED;
+		AperiodicTask* task = plan->aTasks + aTask;
+		sched->flags[(task->r * plan->tasks) + task->taskIndex] = STATUS_RELEASED;
 	}
 
 	return sched;

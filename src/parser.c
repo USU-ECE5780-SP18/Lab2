@@ -8,7 +8,7 @@
 // Exploits the symmetry of struct PeriodicTask and struct AperiodicTask                                               |
 // Exploits the symmetry of the input file format "ID, C, T/r" for Periodic/Aperiodic                                  |
 //---------------------------------------------------------------------------------------------------------------------+
-inline void ParseTask(char* buff, size_t line_n, PeriodicTask* task) {
+static inline void ParseTask(char* buff, size_t line_n, PeriodicTask* task) {
 	// Indicies of string parsing bounds
 	int bos = 0, // beginning of string
 		eos = 0; // end of string

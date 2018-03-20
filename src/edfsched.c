@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "reporter.h"
+#include <stdbool.h>
 #include <stdlib.h>
 
 typedef struct {
@@ -13,11 +14,11 @@ typedef struct {
 
 typedef struct ListNode {
 	Job* value;
-	ListNode* next;
-	ListNode* prev;
+	struct ListNode* next;
+	struct ListNode* prev;
 } ListNode;
 
-inline void CleanNode(ListNode* node) {
+static inline void CleanNode(ListNode* node) {
 	free(node->value);
 	free(node);
 }
