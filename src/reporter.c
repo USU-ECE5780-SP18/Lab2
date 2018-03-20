@@ -4,7 +4,7 @@
 #include <string.h>
 
 //---------------------------------------------------------------------------------------------------------------------+
-// Outputs a number to the given column in the table (0 - 9999)                                                        |
+// Outputs a positive integer to the given column in the table (0 - 9999)                                              |
 //---------------------------------------------------------------------------------------------------------------------+
 static inline void colCounter(char* col, uint16_t n) {
 	// Two spaces before the number
