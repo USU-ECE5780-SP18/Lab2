@@ -9,7 +9,7 @@
 // For periodic tasks in rate monotonic scheduling, the shorter period has the higher priority                         |
 // Exploits symmetry of (AperiodicTask*)->r to achieve earliest release priority for aperiodic tasks                   |
 //---------------------------------------------------------------------------------------------------------------------+
-void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
+static inline void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
 	for (int i = 0; i < pCount; i++) {
 		for (int j = i + 1; j < pCount; j++) {
 			if (tasks[j]->T < tasks[i]->T) {
