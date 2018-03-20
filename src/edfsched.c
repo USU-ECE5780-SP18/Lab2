@@ -213,15 +213,10 @@ Schedule* EdfSimulation(SimPlan* plan) {
 					active = EarliestDeadline;
 
 					// Check to make sure active is not going to miss its deadline as it's about to start
-					if (active != NULL) {
-						if (active->value->d == time + 1) {
-							flagsNow[active->value->genericTask->taskIndex] = STATUS_OVERDUE;
-							CleanNode(active);
-							active = NULL;
-						}
-						else {
-							break;
-						}
+					if (active->value->d == time + 1) {
+						flagsNow[active->value->genericTask->taskIndex] = STATUS_OVERDUE;
+						CleanNode(active);
+						active = NULL;
 					}
 					else {
 						break;
