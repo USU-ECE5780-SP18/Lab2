@@ -2,6 +2,12 @@
 #include "reporter.h"
 #include <stdlib.h>
 
+//---------------------------------------------------------------------------------------------------------------------+
+// Helper function - sorts a list of tasks such that higher proirity is lower indexed in the given list                |
+// Simple bubble sort: primary sort min (PeriodicTask*)->T; secondary sort max (PeriodicTask*)->C                      |
+// For periodic tasks in rate monotonic scheduling, the shorter period has the higher priority                         |
+// Exploits symmetry of (AperiodicTask*)->r to achieve earliest release priority for aperiodic tasks                   |
+//---------------------------------------------------------------------------------------------------------------------+
 void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
 	for (int i = 0; i < pCount; i++) {
 		for (int j = i + 1; j < pCount; j++) {
@@ -9,12 +15,11 @@ void sortTasks(PeriodicTask** tasks, uint8_t pCount) {
 				PeriodicTask* temp = tasks[i];
 				tasks[i] = tasks[j];
 				tasks[j] = temp;
-			} else if (tasks[j]->T == tasks[i]->T) {
-				if (tasks[j]->C > tasks[i]->C) {
-					PeriodicTask* temp = tasks[i];
-					tasks[i] = tasks[j];
-					tasks[j] = temp;
-				}
+			}
+			else if (tasks[j]->T == tasks[i]->T && tasks[j]->C > tasks[i]->C) {
+				PeriodicTask* temp = tasks[i];
+				tasks[i] = tasks[j];
+				tasks[j] = temp;
 			}
 		}
 	}
