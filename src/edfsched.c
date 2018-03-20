@@ -115,6 +115,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 				listIterator = listIterator->next;
 			}
 
+			// There is a newly released job with an earlier deadline, preempt the active task
 			if (EarliestDeadline != active) {
 				ListNode* next = EarliestDeadline->next;
 				ListNode* prev = EarliestDeadline->prev;
@@ -129,14 +130,14 @@ Schedule* EdfSimulation(SimPlan* plan) {
 					released = next;
 				}
 
-				// Add active to the wait list
+				// Preempt active and add it to the wait list
 				if (active != NULL) {
 					active->next = wait;
 					if (wait != NULL) {
 						wait->prev = active;
 					}
 
-					// Do a final check to make sure we didn't just switch to active (i.e. it's not actually being preempted)
+					// Make sure we didn't just switch to active in a previous iteration of the loop (not preemption)
 					if (sched->activeTask[time - 1] == active->value->genericTask->columnIndex) {
 						flagsPrev[active->value->genericTask->taskIndex] = STATUS_PREEMPTED;
 					}
