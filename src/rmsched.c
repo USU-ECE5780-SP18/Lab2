@@ -44,8 +44,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 
 	// Generate a list of periodic tasks sorted by shortest period first
 	PeriodicTask** pTasks = (PeriodicTask**)calloc(sizeof(PeriodicTask*), plan->pCount);
-	for (int i = 0; i < plan->pCount; i++) {
-		pTasks[i] = plan->pTasks + i;
+	for (task = 0; task < plan->pCount; task++) {
+		pTasks[task] = plan->pTasks + task;
 	}
 	sortTasks(pTasks, plan->pCount);
 
@@ -116,8 +116,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 
 	// Generate a list of aperiodic tasks sorted by earliest release time first
 	AperiodicTask** aTasks = (AperiodicTask**)calloc(sizeof(AperiodicTask*), plan->aCount);
-	for (int i = 0; i < plan->aCount; i++) {
-		aTasks[i] = plan->aTasks + i;
+	for (task = 0; task < plan->aCount; task++) {
+		aTasks[task] = plan->aTasks + task;
 	}
 	sortTasks((PeriodicTask**)aTasks, plan->aCount);
 
