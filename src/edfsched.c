@@ -226,7 +226,8 @@ Schedule* EdfSimulation(SimPlan* plan) {
 		}
 	}
 
-	// By the end releaseSchedule is empty
+	// By the end releaseSchedule is empty because:
+	// Each job has been transfered to wait, then freed one by one after entering the closeJob section
 	free(releaseSchedule);
 
 	return sched;
