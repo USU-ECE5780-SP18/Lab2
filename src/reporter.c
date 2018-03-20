@@ -209,8 +209,13 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	sched->duration = plan->duration;
 	sched->tasks = plan->tasks;
 
+	// Create active task table (calloc initializes to 0 => slack)
 	sched->activeTask = (uint8_t*)calloc(sizeof(uint8_t), sched->duration);
 
+	// Create average response-time table (calloc initializes to 0 for convenience when dealing with sums)
+	sched->avgResponse = (uint16_t*)calloc(sizeof(uint16_t), sched->tasks);
+
+	// Auto-fill the headers based on the task ID's in the given plan
 	sched->header = (char**)malloc(sizeof(char*) * sched->tasks);
 	int i = 0;
 	for (int pTask = 0; pTask < plan->pCount; ++pTask, ++i) {
@@ -220,6 +225,7 @@ Schedule* MakeSchedule(SimPlan* plan) {
 		sched->header[i] = plan->aTasks[aTask].ID;
 	}
 
+	// Clear status state for all tasks at all times
 	int flag_n = sched->duration * sched->tasks;
 	sched->flags = (char*)malloc(sizeof(char) * flag_n);
 	for (int i = 0; i < flag_n; ++i) {
