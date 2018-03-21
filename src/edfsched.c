@@ -243,6 +243,25 @@ Schedule* EdfSimulation(SimPlan* plan) {
 		}
 	}
 
+	// Cleanup any jobs that didn't finish
+	if (active == NULL && wait != NULL) {
+		active = wait;
+		wait = wait->next;
+	}
+	while (active != NULL) {
+		// Record the response time of aperiodic tasks
+		if (active->value->aperiodicTask != NULL) {
+			sched->aperiodicResponseTimes += sched->duration - active->value->release;
+		}
+
+		// Cleanup the released job
+		CleanNode(active);
+		active = wait;
+		if (wait != NULL) {
+			wait = wait->next;
+		}
+	}
+
 	// By the end releaseSchedule is empty because:
 	// Each job has been transfered to wait, then freed one by one after entering the closeJob section
 	free(releaseSchedule);
