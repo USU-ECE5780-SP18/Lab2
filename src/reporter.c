@@ -192,8 +192,14 @@ void WriteSchedule(FILE* fout, Schedule* sched) {
 
 	// Print the summary statistics
 	fprintf(fout,
-		"Utilization: %.4f\r\nMissed Deadlines: %i\r\nPreemption Count: %i\r\n",
-		((float)utilization) / sched->duration, dTotal, pTotal);
+		"Utilization: %.4f\r\n"
+		"Missed Deadlines: %i\r\n"
+		"Preemption Count: %i\r\n"
+		"Average response time of aperiodic tasks: %.2f\r\n",
+		((float)utilization) / sched->duration,
+		dTotal,
+		pTotal,
+		(sched->aperiodicResponseTimes / (float)sched->aCount));
 
 	free(dCount);
 	free(pCount);
@@ -214,6 +220,7 @@ Schedule* MakeSchedule(SimPlan* plan) {
 
 	// Zero the average summing variable
 	sched->aperiodicResponseTimes = 0;
+	sched->aCount = plan->aCount;
 
 	// Auto-fill the headers based on the task ID's in the given plan
 	sched->header = (char**)malloc(sizeof(char*) * sched->tasks);

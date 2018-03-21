@@ -21,8 +21,9 @@ typedef struct {
 	// flattened array of dimensions [duration][tasks]
 	char* flags;
 
-	// sum of response times of each periodic task (division by aCount done by the reporter)
+	// sum of response times of each aperiodic task (division by aCount done by the reporter)
 	uint16_t aperiodicResponseTimes;
+	uint8_t aCount;
 } Schedule;
 
 void WriteSchedule(FILE* fout, Schedule* schedule);
