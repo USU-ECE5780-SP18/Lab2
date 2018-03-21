@@ -145,8 +145,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 
 			if (runtime == 0) {
 				//record the response time of this task
-				sched->responseTimes[aTasks[task]->taskIndex] = now - release;
-				sched->responseCount++;
+				sched->aperiodicResponseTimes += now - release;
 
 				// Proc the next aperiodic task that (was/will be) released
 				if (++task >= plan->aCount) { break; }
@@ -177,9 +176,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 			// Our standard (because of periodic tasks) is to mark the missed deadline at deadline - 1
 			sched->flags[((now - 1) * sched->tasks) + aTasks[task]->taskIndex] = STATUS_OVERDUE;
 
-			//record the response time of this task
-			sched->responseTimes[aTasks[task]->taskIndex] = now - release;
-			sched->responseCount++;
+			// record the response time of this task
+			sched->aperiodicResponseTimes += now - release;
 
 			// Proc the next aperiodic task that (was/will be) released
 			if (++task >= plan->aCount) { break; }

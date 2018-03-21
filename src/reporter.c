@@ -212,9 +212,8 @@ Schedule* MakeSchedule(SimPlan* plan) {
 	// Create active task table (calloc initializes to 0 => slack)
 	sched->activeTask = (uint8_t*)calloc(sizeof(uint8_t), sched->duration);
 
-	// Create average response-time table (calloc initializes to 0 for convenience when dealing with sums)
-	sched->responseTimes = (uint16_t*)calloc(sizeof(uint16_t), sched->tasks);
-	sched->responseCount = (uint8_t*)calloc(sizeof(uint8_t), sched->tasks);
+	// Zero the average summing variable
+	sched->aperiodicResponseTimes = 0;
 
 	// Auto-fill the headers based on the task ID's in the given plan
 	sched->header = (char**)malloc(sizeof(char*) * sched->tasks);
@@ -256,7 +255,5 @@ void CleanSchedule(Schedule* schedule) {
 	free(schedule->activeTask);
 	free(schedule->header);
 	free(schedule->flags);
-	free(schedule->responseTimes);
-	free(schedule->responseCount);
 	free(schedule);
 }
