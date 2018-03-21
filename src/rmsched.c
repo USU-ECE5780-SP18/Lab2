@@ -114,6 +114,8 @@ Schedule* RmSimulation(SimPlan* plan) {
 	}
 	free(pTasks);
 
+    if (!plan->aCount) return sched;
+
 	// Generate a list of aperiodic tasks sorted by earliest release time first
 	AperiodicTask** aTasks = (AperiodicTask**)calloc(sizeof(AperiodicTask*), plan->aCount);
 	for (task = 0; task < plan->aCount; task++) {
