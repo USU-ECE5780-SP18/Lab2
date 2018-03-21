@@ -115,7 +115,7 @@ Schedule* RmSimulation(SimPlan* plan) {
 	free(pTasks);
 
 	// No need to go making memory and segfaults if there are no aperiodic tasks to schedule
-	if (plan->aCount == 0) { return; }
+	if (plan->aCount == 0) { return sched; }
 
 	// Generate a list of aperiodic tasks sorted by earliest release time first
 	AperiodicTask** aTasks = (AperiodicTask**)calloc(sizeof(AperiodicTask*), plan->aCount);
