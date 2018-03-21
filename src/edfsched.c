@@ -8,8 +8,9 @@ typedef struct {
 	PeriodicTask* periodicTask;
 	AperiodicTask* aperiodicTask;
 
-	uint16_t R;
-	uint16_t d;
+	uint16_t runtime;
+	uint16_t deadline;
+	uint16_t release;
 } Job;
 
 typedef struct ListNode {
@@ -41,7 +42,8 @@ Schedule* EdfSimulation(SimPlan* plan) {
 			job->genericTask = task;
 			job->periodicTask = task;
 			job->aperiodicTask = NULL;
-			job->R = task->C;
+			job->runtime = task->C;
+			job->release = release;
 
 			// Insert into the release schedule
 			ListNode* node = (ListNode*)malloc(sizeof(ListNode));
@@ -54,7 +56,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 			releaseSchedule[release] = node;
 
 			// Set the deadline last, since it will also update our iterator
-			job->d = (release += task->T);
+			job->deadline = (release += task->T);
 		}
 	}
 
@@ -67,8 +69,9 @@ Schedule* EdfSimulation(SimPlan* plan) {
 		job->genericTask = (PeriodicTask*)task;
 		job->periodicTask = NULL;
 		job->aperiodicTask = task;
-		job->R = task->C;
-		job->d = task->r + APERIODIC_DEADLINE;
+		job->runtime = task->C;
+		job->release = task->r;
+		job->deadline = task->r + APERIODIC_DEADLINE;
 
 		// Insert into the release schedule
 		ListNode* node = (ListNode*)malloc(sizeof(ListNode));
@@ -109,7 +112,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 			// Find the earliest deadline among active and the released tasks
 			// since active is earlier than anything in wait we can ignore wait
 			while (listIterator != NULL) {
-				if (listIterator->value->d < EarliestDeadline->value->d) {
+				if (listIterator->value->deadline < EarliestDeadline->value->deadline) {
 					EarliestDeadline = listIterator;
 				}
 				listIterator = listIterator->next;
@@ -166,23 +169,29 @@ Schedule* EdfSimulation(SimPlan* plan) {
 		// Execute the active task - potentially deal with the second decision point: closeJob
 		if (active != NULL) {
 			sched->activeTask[now] = active->value->genericTask->columnIndex;
-			active->value->R--;
+			active->value->runtime--;
 
 			bool closeJob = false;
 
 			// Job's finished (imagine an SCV's voice from starcraft)
-			if (active->value->R == 0) {
+			if (active->value->runtime == 0) {
 				closeJob = true;
 			}
 
 			// Missed deadline
-			else if (active->value->d == now + 1) {
+			else if (active->value->deadline == now + 1) {
 				flagsNow[active->value->genericTask->taskIndex] = STATUS_OVERDUE;
 				closeJob = true;
 			}
 
 			// if finished or will miss deadline pull next active from wait
 			if (closeJob) {
+				// Record the response time of aperiodic tasks
+				if (active->value->aperiodicTask != NULL) {
+					sched->aperiodicResponseTimes += now - active->value->release;
+				}
+
+				// Cleanup the released job
 				CleanNode(active);
 				active = NULL;
 
@@ -193,7 +202,7 @@ Schedule* EdfSimulation(SimPlan* plan) {
 
 					// Find the earliest deadline among waiting tasks
 					while (listIterator != NULL) {
-						if (listIterator->value->d < EarliestDeadline->value->d) {
+						if (listIterator->value->deadline < EarliestDeadline->value->deadline) {
 							EarliestDeadline = listIterator;
 						}
 						listIterator = listIterator->next;
@@ -214,8 +223,15 @@ Schedule* EdfSimulation(SimPlan* plan) {
 					active = EarliestDeadline;
 
 					// Check to make sure active is not going to miss its deadline as it's about to start
-					if (active->value->d == now + 1) {
+					if (active->value->deadline == now + 1) {
 						flagsNow[active->value->genericTask->taskIndex] = STATUS_OVERDUE;
+
+						// Record the response time of aperiodic tasks
+						if (active->value->aperiodicTask != NULL) {
+							sched->aperiodicResponseTimes += now - active->value->release;
+						}
+
+						// Cleanup the released job
 						CleanNode(active);
 						active = NULL;
 					}
